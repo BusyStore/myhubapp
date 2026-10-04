@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HUB Stream</title>
+  <!-- FontAwesome Icons -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-color: #0d0f12;
+      --card-bg: #181b20;
+      --menu-bg: #12151a;
+      --accent-color: #ff0055;
+      --text-main: #ffffff;
+      --text-sub: #a0a0a0;
+      --border-color: #22262f;
+      --hover-bg: #1e232b;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding-bottom: 40px;
+      overflow-x: hidden;
+    }
+
+    /* Top Navbar */
+    header {
+      background: #111418;
+      position: sticky;
+      top: 0;
+      z-index: 90;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .menu-btn {
+      background: none;
+      border: none;
+      color: var(--text-main);
+      font-size: 1.3rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px;
+    }
+
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 900;
+      color: var(--accent-color);
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+
+    .search-box {
+      flex-grow: 1;
+      max-width: 300px;
+      position: relative;
+    }
+
+    .search-box input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: #181b20;
+      color: #fff;
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-box input:focus {
+      border-color: var(--accent-color);
+    }
+
+    .search-box i {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-sub);
+      font-size: 0.85rem;
+    }
+
+    /* Side Menu (Sidebar Overlay) */
+    .sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(3px);
+      z-index: 100;
+      display: none;
+    }
+
+    .sidebar {
+      position: fixed;
+      top: 0;
+      left: -280px;
+      width: 270px;
+      height: 100%;
+      background: var(--menu-bg);
+      z-index: 101;
+      transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid var(--border-color);
+    }
+
+    .sidebar.active {
+      left: 0;
+    }
+
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--accent-color);
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.5px;
+    }
+
+    .close-btn {
+      background: none;
+      border: none;
+      color: var(--text-sub);
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .sidebar-menu {
+      list-style: none;
+      padding: 12px 0;
+      overflow-y: auto;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+    }
+
+    .menu-item-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .menu-item-left i {
+      width: 20px;
+      text-align: center;
+    }
+
+    .menu-item:hover, .menu-item.active {
+      background: var(--hover-bg);
+      color: var(--accent-color);
+    }
+
+    /* Dynamic Accordion Submenus */
+    .submenu {
+      list-style: none;
+      background: #090b0e;
+      display: none;
+      border-inner: 1px solid var(--border-color);
+    }
+
+    .submenu li a {
+      display: block;
+      padding: 10px 20px 10px 52px;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 0.88rem;
+      text-transform: capitalize;
+      transition: color 0.2s;
+    }
+
+    .submenu li a:hover {
+      color: var(--accent-color);
+    }
+
+    /* Main Container & Video Player */
+    .container {
+      max-width: 1200px;
+      margin: 16px auto;
+      padding: 0 12px;
+    }
+
+    .player-wrapper {
+      display: none;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    video#videoPlayer {
+      width: 100%;
+      max-height: 500px;
+      display: block;
+      background: #000;
+    }
+
+    .playing-title {
+      padding: 14px;
+      background: #181b20;
+      font-size: 1.05rem;
+      font-weight: 600;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .section-header {
+      margin-bottom: 14px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    /* Video Card Grid Layout */
+    .video-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 12px;
+    }
+
+    @media (min-width: 600px) {
+      .video-grid {
+        grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+        gap: 16px;
+      }
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 8px;
+      overflow: hidden;
+      cursor: pointer;
+      border: 1px solid var(--border-color);
+      transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card:hover {
+      border-color: var(--accent-color);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255, 0, 85, 0.15);
+    }
+
+    /* 10 Sec Short Preview Box */
+    .thumb-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .preview-video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    .play-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 2.2rem;
+      color: rgba(255, 255, 255, 0.85);
+      pointer-events: none;
+      transition: color 0.2s, transform 0.2s;
+    }
+
+    .card:hover .play-badge {
+      color: var(--accent-color);
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+
+    .card-title {
+      padding: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.35;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      height: 2.8em;
+      color: var(--text-main);
+    }
+
+    .status {
+      text-align: center;
+      padding: 50px 20px;
+      color: var(--text-sub);
+      font-size: 0.95rem;
+    }
+
+    .spinner {
+      margin-bottom: 12px;
+      font-size: 1.8rem;
+      color: var(--accent-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header Navigation -->
+  <header>
+    <div class="header-left">
+      <button class="menu-btn" onclick="toggleSidebar()" aria-label="Toggle Menu"><i class="fa-solid fa-bars"></i></button>
+      <div class="logo">HUB</div>
+    </div>
+    <div class="search-box">
+      <i class="fa-solid fa-magnifying-glass"></i>
+      <input type="text" id="searchInput" placeholder="Search videos..." onkeyup="filterSearch()">
+    </div>
+  </header>
+
+  <!-- Side Menu (Sidebar) -->
+  <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <span>HUB MENU</span>
+      <button class="close-btn" onclick="toggleSidebar()" aria-label="Close Menu"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <ul class="sidebar-menu">
+      <!-- 1. Popular -->
+      <li>
+        <div class="menu-item" onclick="filterByTag('popular', 'Popular Videos', this)">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-fire" style="color: #ff4757;"></i>
+            <span>Popular</span>
+          </div>
+        </div>
+      </li>
+
+      <!-- 2. Latest (Default Active) -->
+      <li>
+        <div class="menu-item active" id="defaultMenu" onclick="filterByTag('all', 'Latest Videos', this)">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-clock" style="color: #2ed573;"></i>
+            <span>Latest</span>
+          </div>
+        </div>
+      </li>
+
+      <!-- 3. Category Accordion -->
+      <li>
+        <div class="menu-item" onclick="toggleSubmenu('catSubmenu')">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-layer-group" style="color: #1e90ff;"></i>
+            <span>Category</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem; color: var(--text-sub);"></i>
+        </div>
+        <ul class="submenu" id="catSubmenu"></ul>
+      </li>
+
+      <!-- 4. Model Accordion -->
+      <li>
+        <div class="menu-item" onclick="toggleSubmenu('modelSubmenu')">
+          <div class="menu-item-left">
+            <i class="fa-solid fa-user-astronaut" style="color: #ffa502;"></i>
+            <span>Model</span>
+          </div>
+          <i class="fa-solid fa-chevron-down" style="font-size: 0.8rem; color: var(--text-sub);"></i>
+        </div>
+        <ul class="submenu" id="modelSubmenu"></ul>
+      </li>
+    </ul>
+  </aside>
+
+  <!-- Main View Container -->
+  <div class="container">
+    <!-- Full Streaming Video Player -->
+    <div class="player-wrapper" id="playerWrapper">
+      <video id="videoPlayer" controls autoplay></video>
+      <div class="playing-title" id="playingTitle"></div>
+    </div>
+
+    <div class="section-header">
+      <span id="sectionTitle">Latest Videos</span>
+    </div>
+
+    <!-- Status Message and Grid -->
+    <div class="status" id="statusMsg">
+      <div class="spinner"><i class="fa-solid fa-circle-notch fa-spin"></i></div>
+      Loading streams from channels...
+    </div>
+    <div class="video-grid" id="videoGrid"></div>
+  </div>
+
+  <script>
+    // ------------------------------------------------------------------
+    // Cloudflare Worker URLs (Channel 1 & Channel 2)
+    // ------------------------------------------------------------------
+    const WORKER_URL_1 = "https://WORKER_1.workers.dev/?channel=CHANNEL_1";
+    const WORKER_URL_2 = "https://WORKER_2.workers.dev/?channel=CHANNEL_2";
+
+    let allVideos = [];
+
+    const videoGrid = document.getElementById('videoGrid');
+    const statusMsg = document.getElementById('statusMsg');
+    const playerWrapper = document.getElementById('playerWrapper');
+    const videoPlayer = document.getElementById('videoPlayer');
+    const playingTitle = document.getElementById('playingTitle');
+    const sectionTitle = document.getElementById('sectionTitle');
+
+    // Concurrent fetch from both Worker Endpoints
+    async function loadVideos() {
+      try {
+        const [res1, res2] = await Promise.all([
+          fetch(WORKER_URL_1).then(r => r.json()).catch(() => ({ success: false, data: [] })),
+          fetch(WORKER_URL_2).then(r => r.json()).catch(() => ({ success: false, data: [] }))
+        ]);
+
+        const list1 = (res1 && res1.success && Array.isArray(res1.data)) ? res1.data : [];
+        const list2 = (res2 && res2.success && Array.isArray(res2.data)) ? res2.data : [];
+
+        // Merge videos from both channels
+        allVideos = [...list1, ...list2];
+
+        if (allVideos.length > 0) {
+          statusMsg.style.display = 'none';
+          
+          // Generate Categories and Models from caption hashtags
+          buildDynamicMenus(allVideos);
+          
+          // Default section: Display all merged videos as Latest
+          renderGrid(allVideos);
+        } else {
+          statusMsg.innerHTML = 'No videos found in both channels.';
+        }
+      } catch (e) {
+        statusMsg.innerHTML = 'Error fetching videos from channels. Please check Worker endpoints.';
+      }
+    }
+
+    // Dynamic extraction of Categories and Models from hashtags
+    function buildDynamicMenus(videos) {
+      const categories = new Set();
+      const models = new Set();
+
+      videos.forEach(v => {
+        const captionText = v.caption || '';
+        const tags = (captionText.match(/#\w+/g) || []).map(t => t.replace('#', '').toLowerCase());
+        
+        tags.forEach(tag => {
+          if (tag.startsWith('model_') || tag.startsWith('m_')) {
+            models.add(tag);
+          } else if (tag !== 'popular') {
+            categories.add(tag);
+          }
+        });
+      });
+
+      // Render Category Submenu
+      const catSubmenu = document.getElementById('catSubmenu');
+      catSubmenu.innerHTML = categories.size === 0 
+        ? '<li><a href="#">No categories found</a></li>'
+        : Array.from(categories).map(cat => 
+            `<li><a href="#" onclick="filterByTag('${cat}', 'Category: ${cat}')">${cat}</a></li>`
+          ).join('');
+
+      // Render Model Submenu
+      const modelSubmenu = document.getElementById('modelSubmenu');
+      modelSubmenu.innerHTML = models.size === 0 
+        ? '<li><a href="#">No models found</a></li>'
+        : Array.from(models).map(m => 
+            `<li><a href="#" onclick="filterByTag('${m}', 'Model: ${m}')">${m}</a></li>`
+          ).join('');
+    }
+
+    // Render Cards in Grid
+    function renderGrid(list) {
+      videoGrid.innerHTML = '';
+      if (list.length === 0) {
+        videoGrid.innerHTML = '<div class="status" style="grid-column: 1/-1;">No videos match this criteria.</div>';
+        return;
+      }
+
+      list.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'card';
+        
+        // Play full stream video on click
+        card.onclick = () => playFullVideo(v.stream_url, v.title || 'Untitled Stream');
+
+        // 10-second short preview frame using media fragment #t=0,10
+        const previewUrl = `${v.stream_url}#t=0,10`;
+
+        card.innerHTML = `
+          <div class="thumb-box">
+            <video class="preview-video" src="${previewUrl}" autoplay loop muted playsinline></video>
+            <div class="play-badge"><i class="fa-solid fa-circle-play"></i></div>
+          </div>
+          <div class="card-title">${escapeHtml(v.title || 'Untitled Video')}</div>
+        `;
+        videoGrid.appendChild(card);
+      });
+    }
+
+    // Play full video stream in main player
+    function playFullVideo(url, title) {
+      playerWrapper.style.display = 'block';
+      videoPlayer.src = url;
+      playingTitle.innerText = title;
+      playerWrapper.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Toggle Sidebar Navigation
+    function toggleSidebar() {
+      const sb = document.getElementById('sidebar');
+      const overlay = document.getElementById('sidebarOverlay');
+      sb.classList.toggle('active');
+      overlay.style.display = sb.classList.contains('active') ? 'block' : 'none';
+    }
+
+    // Toggle Accordion Submenus
+    function toggleSubmenu(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'block' ? 'none' : 'block';
+    }
+
+    // Filter videos by Hashtag or Type
+    function filterByTag(tag, title, element) {
+      if (document.getElementById('sidebar').classList.contains('active')) {
+        toggleSidebar();
+      }
+      sectionTitle.innerText = title;
+
+      if (element) {
+        document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+        element.classList.add('active');
+      }
+
+      if (tag === 'all') {
+        renderGrid(allVideos);
+      } else {
+        const filtered = allVideos.filter(v => {
+          const cap = (v.caption || '').toLowerCase();
+          const t = (v.title || '').toLowerCase();
+          return cap.includes(tag.toLowerCase()) || t.includes(tag.toLowerCase());
+        });
+        renderGrid(filtered);
+      }
+    }
+
+    // Instant Search Filter
+    function filterSearch() {
+      const q = document.getElementById('searchInput').value.toLowerCase();
+      const filtered = allVideos.filter(v => (v.title || '').toLowerCase().includes(q));
+      renderGrid(filtered);
+    }
+
+    function escapeHtml(str) {
+      return str ? str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;") : '';
+    }
+
+    // Initial load
+    loadVideos();
+  </script>
+</body>
+</html>
