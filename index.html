@@ -143,13 +143,11 @@
 
   <!-- Modal Video Player -->
   <div id="videoModal" class="modal">
-    <div class="modal-content" id="modalContent">
-      <!-- iframe ကို JS ဖြင့် ထည့်သွင်းမည် -->
-    </div>
+    <div class="modal-content" id="modalContent"></div>
   </div>
 
   <script>
-    // Cloudflare Worker URL ကို ထည့်ပါ
+    // သင့် Cloudflare Worker Link ကို ဒီနေရာမှာ ပြောင်းထည့်ပါ
     const WORKER_URL = "https://myapp.8tetaun9.workers.dev";
 
     async function loadVideos() {
@@ -185,11 +183,9 @@
       const modal = document.getElementById("videoModal");
       const content = document.getElementById("modalContent");
 
-      // Telegram App သို့ လွှဲမသွားစေရန် sandbox ထည့်ထားပါသည်
       content.innerHTML = `
         <span class="close-btn" onclick="closePlayer()">&times;</span>
         <iframe src="${embedUrl}" 
-                sandbox="allow-scripts allow-same-origin" 
                 allowfullscreen>
         </iframe>
       `;
@@ -200,11 +196,10 @@
     function closePlayer() {
       const modal = document.getElementById("videoModal");
       const content = document.getElementById("modalContent");
-      content.innerHTML = ""; // Close လုပ်လျှင် Video ရပ်သွားစေရန်
+      content.innerHTML = "";
       modal.style.display = "none";
     }
 
-    // Modal ပြင်ပနေရာကို နှိပ်လျှင် ပိတ်ရန်
     window.onclick = function(event) {
       const modal = document.getElementById("videoModal");
       if (event.target === modal) {
@@ -212,7 +207,6 @@
       }
     };
 
-    // စတင်ချိန်တွင် ဗီဒီယိုများ ရယူရန်
     loadVideos();
   </script>
 
