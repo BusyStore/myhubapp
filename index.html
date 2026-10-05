@@ -5,19 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>HUB Stream</title>
   <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
-    body {
-      background-color: #0f0f12;
-      color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      padding-bottom: 40px;
-    }
-
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background-color: #0f0f12; color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding-bottom: 40px; }
+    
     header {
       background-color: #14141d;
       padding: 15px 20px;
@@ -30,27 +20,29 @@
       z-index: 100;
     }
 
-    .brand {
-      font-size: 22px;
-      font-weight: bold;
-      color: #ff0055;
-      letter-spacing: 1px;
+    .brand { font-size: 22px; font-weight: bold; color: #ff0055; letter-spacing: 1px; }
+
+    .filter-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
     }
 
-    .container {
-      max-width: 1250px;
-      margin: 20px auto;
-      padding: 0 15px;
+    select {
+      background-color: #1a1a24;
+      color: #fff;
+      border: 1px solid #ff0055;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      outline: none;
+      cursor: pointer;
     }
 
-    .section-title {
-      font-size: 18px;
-      margin-bottom: 15px;
-      border-left: 4px solid #ff0055;
-      padding-left: 10px;
-    }
+    .container { max-width: 1250px; margin: 20px auto; padding: 0 15px; }
+    .section-title { font-size: 18px; margin-bottom: 15px; border-left: 4px solid #ff0055; padding-left: 10px; }
 
-    /* 16:9 Responsive Video Grid Layout */
     .video-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -66,110 +58,32 @@
       transition: transform 0.2s, box-shadow 0.2s;
     }
 
-    .video-card:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 6px 16px rgba(255, 0, 85, 0.25);
-    }
+    .video-card:hover { transform: translateY(-3px); box-shadow: 0 6px 16px rgba(255, 0, 85, 0.25); }
 
-    /* 16:9 Aspect Ratio Frame */
-    .thumbnail-box {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background-color: #000;
-      position: relative;
-    }
-
-    .thumbnail-box video {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    .thumbnail-box { width: 100%; aspect-ratio: 16 / 9; background-color: #000; position: relative; }
+    .thumbnail-box iframe { width: 100%; height: 100%; border: none; pointer-events: none; }
 
     .play-overlay {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      width: 42px;
-      height: 42px;
-      background: rgba(255, 0, 85, 0.85);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
-      color: #fff;
-      pointer-events: none;
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.3);
+      display: flex; align-items: center; justify-content: center;
     }
 
-    .video-details {
-      padding: 12px;
+    .play-icon {
+      width: 42px; height: 42px; background: rgba(255, 0, 85, 0.85);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; color: #fff;
     }
 
-    .video-title {
-      font-size: 13px;
-      font-weight: 500;
-      color: #e0e0e0;
-      line-height: 1.4;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
+    .video-details { padding: 12px; }
+    .video-title { font-size: 13px; font-weight: 500; color: #e0e0e0; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
-    .status-msg {
-      grid-column: 1 / -1;
-      text-align: center;
-      padding: 40px;
-      color: #888888;
-      font-size: 14px;
-    }
+    .status-msg { grid-column: 1 / -1; text-align: center; padding: 40px; color: #888888; font-size: 14px; }
 
-    /* Video Player Modal */
-    .modal-player {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background-color: rgba(0, 0, 0, 0.95);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .modal-content {
-      width: 95%;
-      max-width: 850px;
-      background: #111;
-      border-radius: 8px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .modal-content video {
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: #000;
-      display: block;
-    }
-
-    .close-btn {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 28px;
-      color: #fff;
-      cursor: pointer;
-      z-index: 1001;
-      background: rgba(0,0,0,0.6);
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      text-align: center;
-      line-height: 32px;
-    }
+    /* Modal Embed Player */
+    .modal-player { display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background-color: rgba(0, 0, 0, 0.95); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-content { width: 95%; max-width: 850px; background: #111; border-radius: 8px; overflow: hidden; position: relative; }
+    .close-btn { position: absolute; top: 10px; right: 15px; font-size: 28px; color: #fff; cursor: pointer; z-index: 1001; background: rgba(0,0,0,0.6); width: 36px; height: 36px; border-radius: 50%; text-align: center; line-height: 32px; }
   </style>
 </head>
 <body>
@@ -179,95 +93,132 @@
   </header>
 
   <div class="container">
-    <h2 class="section-title">Latest Videos</h2>
+    <div class="filter-bar">
+      <select id="categoryFilter" onchange="applyFilters()">
+        <option value="ALL">All Categories</option>
+      </select>
+      <select id="modelFilter" onchange="applyFilters()">
+        <option value="ALL">All Models</option>
+      </select>
+    </div>
+
+    <h2 class="section-title">Videos</h2>
     <div class="video-grid" id="videoGrid">
       <div class="status-msg">Loading videos...</div>
     </div>
   </div>
 
-  <!-- Fullscreen Video Player Modal -->
   <div class="modal-player" id="videoModal">
-    <div class="modal-content">
-      <span class="close-btn" onclick="closePlayer()">&times;</span>
-      <video id="fullVideo" controls autoplay></video>
-    </div>
+    <div class="modal-content" id="modalContent"></div>
   </div>
 
   <script>
     const WORKER_URL_1 = "https://myapp.8tetaun9.workers.dev";
-    const WORKER_URL_2 = ""; 
+    let masterVideoList = [];
 
     async function loadVideos() {
       const grid = document.getElementById("videoGrid");
-      let allVideos = [];
-
       try {
-        // Fetch Worker 1
-        if (WORKER_URL_1) {
-          const res1 = await fetch(WORKER_URL_1);
-          const json1 = await res1.json();
-          if (json1.success && Array.isArray(json1.data)) {
-            allVideos = allVideos.concat(json1.data);
-          }
-        }
+        const res = await fetch(WORKER_URL_1);
+        const json = await res.json();
 
-        // Fetch Worker 2 (ရှိပါက)
-        if (WORKER_URL_2) {
-          try {
-            const res2 = await fetch(WORKER_URL_2);
-            const json2 = await res2.json();
-            if (json2.success && Array.isArray(json2.data)) {
-              allVideos = allVideos.concat(json2.data);
-            }
-          } catch (e) {}
-        }
-
-        if (allVideos.length === 0) {
+        if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+          masterVideoList = json.data;
+          populateFilterOptions(masterVideoList);
+          renderGrid(masterVideoList);
+        } else {
           grid.innerHTML = '<div class="status-msg">No videos found.</div>';
-          return;
         }
-
-        grid.innerHTML = "";
-
-        allVideos.forEach(vid => {
-          const card = document.createElement("div");
-          card.className = "video-card";
-
-          // Main Page မှာ ပထမ 10 စက္ကန့်စာ Preview Play လုပ်မည်
-          const previewUrl = `${vid.stream_url}#t=0,10`;
-
-          card.innerHTML = `
-            <div class="thumbnail-box" onclick="openPlayer('${vid.stream_url}')">
-              <video src="${previewUrl}" preload="metadata" muted loop onmouseover="this.play()" onmouseout="this.pause();this.currentTime=0;"></video>
-              <div class="play-overlay">▶</div>
-            </div>
-            <div class="video-details" onclick="openPlayer('${vid.stream_url}')">
-              <div class="video-title">${vid.title || 'Untitled Video'}</div>
-            </div>
-          `;
-
-          grid.appendChild(card);
-        });
-
       } catch (err) {
-        console.error("Error loading videos:", err);
-        grid.innerHTML = '<div class="status-msg" style="color:#ff5555;">Failed to load videos. Check Worker URL.</div>';
+        grid.innerHTML = '<div class="status-msg" style="color:#ff5555;">Failed to load videos.</div>';
       }
+    }
+
+    function populateFilterOptions(videos) {
+      const categories = new Set();
+      const models = new Set();
+
+      videos.forEach(v => {
+        const tags = (v.caption || "").match(/#\w+/g) || [];
+        tags.forEach(tag => {
+          const cleanTag = tag.replace("#", "");
+          if (cleanTag.toLowerCase().startsWith("model_")) {
+            models.add(cleanTag.replace(/^model_/i, ""));
+          } else {
+            categories.add(cleanTag);
+          }
+        });
+      });
+
+      const catSelect = document.getElementById("categoryFilter");
+      const modelSelect = document.getElementById("modelFilter");
+
+      categories.forEach(cat => {
+        catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+      });
+
+      models.forEach(mod => {
+        modelSelect.innerHTML += `<option value="${mod}">Model: ${mod}</option>`;
+      });
+    }
+
+    function applyFilters() {
+      const selectedCat = document.getElementById("categoryFilter").value;
+      const selectedModel = document.getElementById("modelFilter").value;
+
+      const filtered = masterVideoList.filter(vid => {
+        const caption = vid.caption || "";
+        const matchCat = (selectedCat === "ALL") || caption.includes(`#${selectedCat}`);
+        const matchModel = (selectedModel === "ALL") || caption.toLowerCase().includes(`#model_${selectedModel.toLowerCase()}`);
+        return matchCat && matchModel;
+      });
+
+      renderGrid(filtered);
+    }
+
+    function renderGrid(videos) {
+      const grid = document.getElementById("videoGrid");
+      grid.innerHTML = "";
+
+      if (videos.length === 0) {
+        grid.innerHTML = '<div class="status-msg">No videos match the selected filter.</div>';
+        return;
+      }
+
+      videos.forEach(vid => {
+        const card = document.createElement("div");
+        card.className = "video-card";
+
+        card.innerHTML = `
+          <div class="thumbnail-box" onclick="openPlayer('${vid.stream_url}')">
+            <iframe src="${vid.stream_url}" scrolling="no"></iframe>
+            <div class="play-overlay">
+              <div class="play-icon">▶</div>
+            </div>
+          </div>
+          <div class="video-details" onclick="openPlayer('${vid.stream_url}')">
+            <div class="video-title">${vid.title || 'Untitled Video'}</div>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
     }
 
     function openPlayer(url) {
       const modal = document.getElementById("videoModal");
-      const video = document.getElementById("fullVideo");
-      video.src = url;
+      const content = document.getElementById("modalContent");
+
+      content.innerHTML = `
+        <span class="close-btn" onclick="closePlayer()">&times;</span>
+        <iframe src="${url}" style="width:100%; aspect-ratio:16/9; border:none; background:#000;" allowfullscreen></iframe>
+      `;
       modal.style.display = "flex";
-      video.play();
     }
 
     function closePlayer() {
       const modal = document.getElementById("videoModal");
-      const video = document.getElementById("fullVideo");
-      video.pause();
-      video.src = "";
+      const content = document.getElementById("modalContent");
+      content.innerHTML = "";
       modal.style.display = "none";
     }
 
@@ -275,4 +226,3 @@
   </script>
 </body>
 </html>
-
