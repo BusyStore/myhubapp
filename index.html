@@ -141,13 +141,13 @@
   <div id="status-msg">Loading videos...</div>
   <div id="video-grid" class="video-grid"></div>
 
-  <!-- Modal Video Player -->
+  <!-- Modal Video Player Popup -->
   <div id="videoModal" class="modal">
     <div class="modal-content" id="modalContent"></div>
   </div>
 
   <script>
-    // သင့် Cloudflare Worker Link ကို ဒီနေရာမှာ ပြောင်းထည့်ပါ
+    // သင့် Cloudflare Worker ၏ Link ကို အောက်ပါ နေရာတွင် ထည့်ပေးပါ
     const WORKER_URL = "https://myapp.8tetaun9.workers.dev";
 
     async function loadVideos() {
@@ -158,11 +158,14 @@
         const res = await fetch(WORKER_URL);
         const data = await res.json();
 
-        if (data.success && data.videos.length > 0) {
+        // Data စစ်ဆေးမှု ပိုမို ခိုင်မာအောင် ပြင်ထားပါသည်
+        const videoList = (data && data.videos) ? data.videos : [];
+
+        if (data.success && videoList.length > 0) {
           statusMsg.style.display = "none";
           grid.innerHTML = "";
 
-          data.videos.forEach((video) => {
+          videoList.forEach((video) => {
             const card = document.createElement("div");
             card.className = "video-card";
             card.innerHTML = `
@@ -172,7 +175,7 @@
             grid.appendChild(card);
           });
         } else {
-          statusMsg.innerText = "ဗီဒီယိုများ မရှိသေးပါ။";
+          statusMsg.innerText = "ဗီဒီယိုများ မရှိသေးပါ သို့မဟုတ် Telegram Channel တွင် Video Post မရှိသေးပါ။";
         }
       } catch (err) {
         statusMsg.innerText = "Error loading videos: " + err.message;
@@ -185,9 +188,7 @@
 
       content.innerHTML = `
         <span class="close-btn" onclick="closePlayer()">&times;</span>
-        <iframe src="${embedUrl}" 
-                allowfullscreen>
-        </iframe>
+        <iframe src="${embedUrl}" allowfullscreen></iframe>
       `;
 
       modal.style.display = "flex";
@@ -207,6 +208,7 @@
       }
     };
 
+    // ဗီဒီယိုများ စတင်ခေါ်ယူရန်
     loadVideos();
   </script>
 
