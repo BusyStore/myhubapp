@@ -1,63 +1,117 @@
+// ==========================================
+// MY HUB - APP LOGIC & VIP ROUTING
+// ==========================================
+
+// WORKER BACKEND CONFIGURATION
 const WORKER_API_URL = "https://myhubapp.dathalay1.workers.dev/api/catalog";
 const STREAM_BASE_URL = "https://myhubapp.dathalay1.workers.dev/stream?file_id=";
 
-document.addEventListener("DOMContentLoaded", () => {
-    fetchCatalog();
-});
+// Global Data Stores
+let videoData = [];
+let categoryData = [];
+let modelData = [];
 
-async function fetchCatalog() {
+// 1. Google Sheet မှ Data များကို Worker API မှတစ်ဆင့် Auto Fetch လုပ်ခြင်း
+async function loadDataFromWorker() {
     try {
         const response = await fetch(WORKER_API_URL);
         const data = await response.json();
 
-        // Header Row ကို ဖယ်ထုတ်ပြီး ဗီဒီယို Data များကို စစ်ထုတ်ခြင်း
-        const videoData = data.filter(item => item.file_id && item.file_id !== "file_id");
+        if (Array.isArray(data)) {
+            videoData = data.map(item => ({
+                title: item.title || '',
+                category: item.category || '',
+                model: item.model || '',
+                thumbnail: item.thumbnail || 'https://via.placeholder.com/300x180',
+                stream_url: `${STREAM_BASE_URL}${item.file_id}`,
+                isVip: item.isVip === 'true' || item.isVip === true,
+                views: item.views || 0,
+                tags: [item.category, item.model].filter(Boolean)
+            }));
 
-        renderContent(videoData);
+            const categories = [...new Set(data.map(item => item.category).filter(Boolean))];
+            categoryData = categories.map(cat => ({ name: cat, image: '' }));
+
+            const models = [...new Set(data.map(item => item.model).filter(Boolean))];
+            modelData = models.map(m => ({ name: m, image: '' }));
+
+            if (typeof renderContent === 'function') {
+                renderContent();
+            }
+            if (typeof handleSearch === 'function') {
+                handleSearch();
+            }
+        }
     } catch (error) {
-        console.error("Error fetching catalog:", error);
+        console.error("Worker Data Fetch Error:", error);
     }
 }
 
-function renderContent(videoData) {
-    // HTML ထဲက Container Element ကို ရှာခြင်း (အစ်ကို့ Container ID ပေါ်မူတည်၍ သုံးပေးပါ)
-    const container = document.getElementById("video-container") || document.querySelector(".video-grid") || document.body;
+// 2. Side Menu ဖွင့်/ပိတ် (Toggle)
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const mainContent = document.getElementById('mainContent');
 
-    if (!container) return;
-
-    container.innerHTML = "";
-
-    if (!videoData || videoData.length === 0) {
-        container.innerHTML = "<p style='color:white; padding:20px;'>No videos found.</p>";
-        return;
-    }
-
-    videoData.forEach(video => {
-        const card = document.createElement("div");
-        card.className = "video-card";
-        card.style.cssText = "margin: 10px; padding: 10px; background: #222; color: #fff; border-radius: 8px;";
-
-        card.innerHTML = `
-            <div class="thumbnail-box" style="margin-bottom: 8px;">
-                <img src="${video.thumbnail || 'https://via.placeholder.com/300x170'}" alt="${video.title}" style="width: 100%; border-radius: 4px; object-fit: cover;">
-            </div>
-            <div class="video-info">
-                <h3 style="margin: 5px 0; font-size: 16px;">${video.title}</h3>
-                <p style="margin: 5px 0; font-size: 12px; color: #aaa;">Category: ${video.category}</p>
-                <button onclick="playVideo('${video.file_id}')" style="padding: 8px 12px; background: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold;">Play Video</button>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
-function playVideo(fileId) {
-    const videoPlayer = document.getElementById("main-player");
-    if (videoPlayer) {
-        videoPlayer.src = STREAM_BASE_URL + fileId;
-        videoPlayer.play();
+    if (window.innerWidth > 768) {
+        if (sidebar) sidebar.classList.toggle('closed');
+        if (mainContent) mainContent.classList.toggle('expanded');
     } else {
-        // Video Player Tag မရှိပါက ပလေယာ Link ကို တိုက်ရိုက်ပွင့်စေခြင်း
-        window.open(STREAM_BASE_URL + fileId, "_blank");
+        if (sidebar) sidebar.classList.toggle('open');
     }
 }
+
+// 3. User Login စစ်ဆေးခြင်း
+function isLoggedIn() {
+    return localStorage.getItem("isLoggedIn") === "true";
+}
+
+// 4. VIP Zone စစ်ဆေးခြင်း
+function checkVipAccess() {
+    if (isLoggedIn()) {
+        window.location.href = "vip.html";
+    } else {
+        alert("VIP သို့ ဝင်ရောက်ရန် Account အရင်ပြုလုပ်ပေးပါခင်ဗျာ။");
+        window.location.href = "login.html";
+    }
+}
+
+// 5. Video Player Pop-up Modal (စာမျက်နှာတိုင်းတွင် Auto Player ပါဝင်စေခြင်း)
+function openPlayer(streamUrl) {
+    let modal = document.getElementById('videoModal');
+    
+    // Modal မရှိပါက Auto ဖန်တီးပေးခြင်း
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'videoModal';
+        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;';
+        modal.innerHTML = '<div style="width:95%; max-width:850px; background:#111; position:relative; border-radius:8px; overflow:hidden;" id="modalContent"></div>';
+        document.body.appendChild(modal);
+    }
+
+    let modalContent = document.getElementById('modalContent');
+    if (!modalContent) return;
+
+    modalContent.innerHTML = `
+        <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:none; border:none; color:white; font-size:24px; cursor:pointer; z-index:10;"><i class="fa-solid fa-xmark"></i></button>
+        <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay preload="auto" style="width:100%; height:450px;">
+            <source src="${streamUrl}" type="application/x-mpegURL">
+        </video>
+    `;
+    modal.style.display = 'flex';
+
+    if (window.videojs) {
+        videojs('my-video');
+    }
+}
+
+// 6. Video Player ပိတ်ခြင်း
+function closePlayer() {
+    const modal = document.getElementById('videoModal');
+    const modalContent = document.getElementById('modalContent');
+    if (modal) {
+        modal.style.display = 'none';
+        if (modalContent) modalContent.innerHTML = '';
+    }
+}
+
+document.addEventListener("DOMContentLoaded", loadDataFromWorker);
