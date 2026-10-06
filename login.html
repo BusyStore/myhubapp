@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Hub - Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        .login-box { width: 100%; max-width: 380px; background: var(--card-bg); padding: 30px; border-radius: 10px; border: 1px solid var(--border-color); text-align: center; }
+        .login-box h2 { margin-bottom: 20px; color: var(--accent-color); }
+        .login-box input { width: 100%; padding: 12px; margin: 8px 0; background: #0f0f12; border: 1px solid var(--border-color); color: #fff; border-radius: 6px; }
+        .login-box button { width: 100%; padding: 12px; margin-top: 15px; background: var(--accent-color); border: none; color: white; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .telegram-btn { margin-top: 20px; display: inline-flex; align-items: center; gap: 8px; color: #0088cc; text-decoration: none; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <main class="main-content" style="margin-left: 0; width: 100%;">
+        <div class="login-container">
+            <div class="login-box">
+                <h2>Sign In / Sign Up</h2>
+                <input type="text" id="username" placeholder="Username">
+                <input type="password" id="password" placeholder="Password">
+                <button onclick="handleLogin()">Sign In</button>
+                
+                <br>
+                <!-- Telegram Bot လင့်ခ် ထည့်ရန် နေရာ -->
+                <a href="https://t.me/YOUR_TELEGRAM_BOT_USERNAME" target="_blank" class="telegram-btn">
+                    <i class="fa-brands fa-telegram"></i> Contact to Admin
+                </a>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/app.js"></script>
+    <script>
+        function handleLogin() {
+            // လော့ဂ်အင် အောင်မြင်ကြောင်း မှတ်သားပြီး VIP Page သို့ ပို့ပေးမည်
+            localStorage.setItem("isLoggedIn", "true");
+            alert("Login Successful!");
+            window.location.href = "vip.html";
+        }
+    </script>
+</body>
+</html>
