@@ -75,11 +75,15 @@ function checkVipAccess() {
     }
 }
 
-// 5. Video Player Pop-up Modal (စာမျက်နှာတိုင်းတွင် Auto Player ပါဝင်စေခြင်း)
-function openPlayer(streamUrl) {
+// 5. Video Player Pop-up Modal (M3U8 Streaming Support)
+function openPlayer(streamUrl, title = '') {
+    if (!streamUrl || streamUrl.endsWith('file_id=')) {
+        alert("ဗီဒီယို လင့်ခ်/File ID မရှိသေးပါ။");
+        return;
+    }
+
     let modal = document.getElementById('videoModal');
     
-    // Modal မရှိပါက Auto ဖန်တီးပေးခြင်း
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'videoModal';
@@ -92,15 +96,33 @@ function openPlayer(streamUrl) {
     if (!modalContent) return;
 
     modalContent.innerHTML = `
-        <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:none; border:none; color:white; font-size:24px; cursor:pointer; z-index:10;"><i class="fa-solid fa-xmark"></i></button>
-        <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay preload="auto" style="width:100%; height:450px;">
-            <source src="${streamUrl}" type="application/x-mpegURL">
-        </video>
+        <div style="padding:10px 15px; background:#222; color:#fff; display:flex; justify-content:space-between; align-items:center;">
+            <h3 style="margin:0; font-size:16px;">${title}</h3>
+            <button onclick="closePlayer()" style="background:none; border:none; color:white; font-size:24px; cursor:pointer;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <video id="hlsPlayer" controls autoplay style="width:100%; max-height:80vh; background:#000;"></video>
     `;
     modal.style.display = 'flex';
 
-    if (window.videojs) {
-        videojs('my-video');
+    const video = document.getElementById('hlsPlayer');
+
+    // M3U8 HLS Stream စစ်ဆေးဖွင့်လှစ်ခြင်း
+    if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(streamUrl);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            video.play();
+        });
+        window.currentHls = hls;
+    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // Safari / iOS အတွက် Native Support
+        video.src = streamUrl;
+        video.addEventListener('loadedmetadata', function () {
+            video.play();
+        });
+    } else {
+        video.src = streamUrl;
     }
 }
 
@@ -108,10 +130,14 @@ function openPlayer(streamUrl) {
 function closePlayer() {
     const modal = document.getElementById('videoModal');
     const modalContent = document.getElementById('modalContent');
+    
+    if (window.currentHls) {
+        window.currentHls.destroy();
+        window.currentHls = null;
+    }
+
     if (modal) {
         modal.style.display = 'none';
         if (modalContent) modalContent.innerHTML = '';
     }
 }
-
-document.addEventListener("DOMContentLoaded", loadDataFromWorker);
