@@ -10,17 +10,52 @@ async function fetchCatalog() {
         const response = await fetch(WORKER_API_URL);
         const data = await response.json();
 
-        // Header Row ကို ဖယ်ထုတ်ပြီး ဗီဒီယို Data များကို စစ်ထုတ်ခြင်း
-        const videoData = data.filter(item => item.file_id && item.file_id !== "file_id");
+        // 1. Data စစ်ထုတ်ခြင်းနှင့် Image Link များ ပြင်ဆင်ခြင်း
+        const videoData = data.filter(item => item.file_id && item.file_id !== "file_id").map(item => {
+            // Video Thumbnail ပြင်ရန်
+            let thumb = item.thumbnail || '';
+            if (thumb.includes('drive.google.com/file/d/')) {
+                const fileId = thumb.split('/file/d/')[1].split('/')[0];
+                thumb = `https://lh3.googleusercontent.com/d/${fileId}`;
+            }
 
+            // Model Image ပြင်ရန်
+            let modelImg = item.model_image || '';
+            if (modelImg.includes('drive.google.com/file/d/')) {
+                const fileId = modelImg.split('/file/d/')[1].split('/')[0];
+                modelImg = `https://lh3.googleusercontent.com/d/${fileId}`;
+            }
+
+            return { 
+                ...item, 
+                thumbnail: thumb,
+                model_image: modelImg 
+            };
+        });
+
+        // 2. Video များကို Render လုပ်ရန်
         renderContent(videoData);
+
+        // 3. Model စာရင်းထုတ်ယူပြီး Render လုပ်ရန်
+        const uniqueModels = [...new Set(videoData.map(item => item.model).filter(Boolean))];
+        const modelData = uniqueModels.map(m => {
+            const found = videoData.find(v => v.model && v.model.trim().toLowerCase() === m.trim().toLowerCase());
+            return { 
+                name: m, 
+                image: (found && found.model_image) ? found.model_image : 'https://via.placeholder.com/150' 
+            };
+        });
+
+        if (document.getElementById("modelContainer")) {
+            renderModels(modelData);
+        }
+
     } catch (error) {
         console.error("Error fetching catalog:", error);
     }
 }
 
 function renderContent(videoData) {
-    // HTML ထဲက Container Element ကို ရှာခြင်း (အစ်ကို့ Container ID ပေါ်မူတည်၍ သုံးပေးပါ)
     const container = document.getElementById("video-container") || document.querySelector(".video-grid") || document.body;
 
     if (!container) return;
@@ -51,13 +86,32 @@ function renderContent(videoData) {
     });
 }
 
+function renderModels(models) {
+    const container = document.getElementById("modelContainer");
+    if (!container) return;
+    
+    container.innerHTML = "";
+    
+    models.forEach(m => {
+        const card = document.createElement("a");
+        card.href = `index.html?model=${encodeURIComponent(m.name)}`;
+        card.style.cssText = "display: inline-block; margin: 10px; text-decoration: none; text-align: center; color: #fff;";
+        card.innerHTML = `
+            <div style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; border: 2px solid #e50914; margin: 0 auto 8px auto;">
+                <img src="${m.image}" alt="${m.name}" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <span style="font-size: 14px; font-weight: bold;">${m.name}</span>
+        `;
+        container.appendChild(card);
+    });
+}
+
 function playVideo(fileId) {
     const videoPlayer = document.getElementById("main-player");
     if (videoPlayer) {
         videoPlayer.src = STREAM_BASE_URL + fileId;
         videoPlayer.play();
     } else {
-        // Video Player Tag မရှိပါက ပလေယာ Link ကို တိုက်ရိုက်ပွင့်စေခြင်း
         window.open(STREAM_BASE_URL + fileId, "_blank");
     }
 }
