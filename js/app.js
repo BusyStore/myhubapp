@@ -17,23 +17,29 @@ async function loadDataFromWorker() {
             videoData = data.map(item => ({
                 title: item.title || '',
                 category: item.category || '',
-                model: item.model || '',
+                model: item.model || item.Model || '',
                 thumbnail: item.thumbnail || 'https://via.placeholder.com/300x180',
                 stream_url: `${STREAM_BASE_URL}${item.file_id}`,
-                isVip: item.isVip === 'true' || item.isVip === true,
+                isVip: String(item.isVip).toLowerCase() === 'true',
                 views: item.views || 0,
-                tags: [item.category, item.model].filter(Boolean)
+                tags: [item.category, item.model || item.Model].filter(Boolean)
             }));
 
-            const categories = [...new Set(data.map(item => item.category).filter(Boolean))];
+            const categories = [...new Set(videoData.map(item => item.category).filter(Boolean))];
             categoryData = categories.map(cat => ({ name: cat }));
 
-            const models = [...new Set(data.map(item => item.model).filter(Boolean))];
+            const models = [...new Set(videoData.map(item => item.model).filter(Boolean))];
             modelData = models.map(m => ({ name: m }));
 
-            if (typeof renderContent === 'function') renderContent();
-            if (typeof renderModels === 'function') renderModels();
-            if (typeof handleSearch === 'function') handleSearch();
+            if (document.getElementById('videoContainer')) {
+                renderContent();
+            }
+            if (document.getElementById('modelContainer')) {
+                renderModels();
+            }
+            if (typeof handleSearch === 'function') {
+                handleSearch();
+            }
         }
     } catch (error) {
         console.error("Worker Data Fetch Error:", error);
@@ -52,7 +58,22 @@ function toggleSidebar() {
     }
 }
 
-// 3. Open Video Player
+// 3. User Login
+function isLoggedIn() {
+    return localStorage.getItem("isLoggedIn") === "true";
+}
+
+// 4. VIP Access
+function checkVipAccess() {
+    if (isLoggedIn()) {
+        window.location.href = "vip.html";
+    } else {
+        alert("VIP သို့ ဝင်ရောက်ရန် Account အရင်ပြုလုပ်ပေးပါခင်ဗျာ။");
+        window.location.href = "login.html";
+    }
+}
+
+// 5. Video Player Modal
 function openPlayer(streamUrl) {
     let modal = document.getElementById('videoModal');
     if (!modal) {
@@ -75,9 +96,14 @@ function openPlayer(streamUrl) {
     modal.style.display = 'flex';
 
     if (window.videojs) {
-        if (videojs.getPlayers()['my-video']) videojs.getPlayers()['my-video'].dispose();
+        if (videojs.getPlayers()['my-video']) {
+            videojs.getPlayers()['my-video'].dispose();
+        }
         const player = videojs('my-video', {
-            autoplay: true, controls: true, responsive: true, fluid: true,
+            autoplay: true,
+            controls: true,
+            responsive: true,
+            fluid: true,
             playbackRates: [0.5, 1, 1.25, 1.5, 2]
         });
 
@@ -108,29 +134,32 @@ function openPlayer(streamUrl) {
                 if (overlay) {
                     overlay.innerText = text;
                     overlay.style.display = 'block';
-                    setTimeout(() => overlay.style.display = 'none', 800);
+                    setTimeout(() => { overlay.style.display = 'none'; }, 800);
                 }
             }
         });
     }
 }
 
-// 4. Close Player
+// 6. Close Player
 function closePlayer() {
     const modal = document.getElementById('videoModal');
     if (modal) {
-        if (window.videojs && videojs.getPlayers()['my-video']) videojs.getPlayers()['my-video'].dispose();
+        if (window.videojs && videojs.getPlayers()['my-video']) {
+            videojs.getPlayers()['my-video'].dispose();
+        }
         modal.style.display = 'none';
         modal.innerHTML = '';
     }
 }
 
-// 5. Render Video Content
+// 7. Render Video Content
 function renderContent() {
     const container = document.getElementById('videoContainer');
     if (!container) return;
 
     container.innerHTML = '';
+
     const urlParams = new URLSearchParams(window.location.search);
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
@@ -139,12 +168,26 @@ function renderContent() {
     let displayData = videoData.filter(v => !v.isVip);
 
     if (selectedModel) {
-        displayData = displayData.filter(item => item.model && item.model.trim().toLowerCase() === selectedModel.trim().toLowerCase());
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = `Model: ${selectedModel}`;
+
+        displayData = displayData.filter(item => 
+            item.model && decodeURIComponent(item.model).trim().toLowerCase() === decodeURIComponent(selectedModel).trim().toLowerCase()
+        );
     }
+
     if (selectedCategory) {
-        displayData = displayData.filter(item => item.category && item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase());
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = `Category: ${selectedCategory}`;
+
+        displayData = displayData.filter(item => 
+            item.category && decodeURIComponent(item.category).trim().toLowerCase() === decodeURIComponent(selectedCategory).trim().toLowerCase()
+        );
     }
+
     if (isPopular) {
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = "Popular Videos";
         displayData.sort((a, b) => (b.views || 0) - (a.views || 0));
     }
 
@@ -155,9 +198,9 @@ function renderContent() {
 
     displayData.forEach(video => {
         container.innerHTML += `
-            <div class="video-card" onclick="openPlayer('${video.stream_url}')">
+            <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
                 <div class="thumbnail-box" style="position:relative;">
-                    <img src="${video.thumbnail}" alt="${video.title}" style="width:100%; border-radius:8px;">
+                    <img src="${video.thumbnail}" alt="${video.title}" style="width:100%; border-radius:8px; display:block;">
                     <span class="view-badge" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; padding:2px 6px; border-radius:4px; font-size:12px;">
                         <i class="fa-solid fa-eye"></i> ${video.views || 0}
                     </span>
@@ -170,7 +213,7 @@ function renderContent() {
     });
 }
 
-// 6. Render Model List
+// 8. Render Model List
 function renderModels() {
     const modelContainer = document.getElementById('modelContainer');
     if (!modelContainer) return;
