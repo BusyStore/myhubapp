@@ -35,8 +35,12 @@ async function loadDataFromWorker() {
             const models = [...new Set(data.map(item => item.model).filter(Boolean))];
             modelData = models.map(m => ({ name: m, image: '' }));
 
+            // Data ရရှိလာပါက စာမျက်နှာအလိုက် Auto Render လုပ်ပေးခြင်း
             if (typeof renderContent === 'function') {
                 renderContent();
+            }
+            if (typeof renderModels === 'function') {
+                renderModels();
             }
             if (typeof handleSearch === 'function') {
                 handleSearch();
@@ -75,11 +79,10 @@ function checkVipAccess() {
     }
 }
 
-// 5. Video Player Pop-up Modal (Video.js - Speed Control & Double Tap 10s Skip ပါဝင်သော Player)
+// 5. Video Player Pop-up Modal
 function openPlayer(streamUrl) {
     let modal = document.getElementById('videoModal');
     
-    // Modal မရှိပါက Auto ဖန်တီးပေးခြင်း
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'videoModal';
@@ -91,8 +94,8 @@ function openPlayer(streamUrl) {
         <div id="modalContent" style="position:relative; width:95%; max-width:850px; background:#111; border-radius:8px; overflow:hidden;">
             <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:rgba(0,0,0,0.6); border:none; color:white; font-size:24px; cursor:pointer; z-index:10000; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
             
-            <!-- Skip Indicator Overlay (Double Tap ရိုက်စဉ် 10s + / 10s - စာသားပြရန်) -->
-            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:20px; font-weight:bold; background:rgba(0,0,0,0.75); padding:10px 20px; border-radius:25px; display:none; pointer-events:none; z-index:9999;"></div>
+            <!-- သေးငယ်သေသပ်သော Skip Overlay Box -->
+            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:13px; font-weight:600; background:rgba(0,0,0,0.75); padding:6px 14px; border-radius:20px; display:none; pointer-events:none; z-index:9999; backdrop-filter:blur(4px); letter-spacing:0.5px;"></div>
 
             <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay preload="auto" style="width:100%; height:450px;">
                 <source src="${streamUrl}" type="application/x-mpegURL">
@@ -103,7 +106,6 @@ function openPlayer(streamUrl) {
     modal.style.display = 'flex';
 
     if (window.videojs) {
-        // ယခင် Player သီးသန့်ရှိနေပါက ဖျက်မည်
         if (videojs.getPlayers()['my-video']) {
             videojs.getPlayers()['my-video'].dispose();
         }
@@ -113,27 +115,22 @@ function openPlayer(streamUrl) {
             controls: true,
             responsive: true,
             fluid: true,
-            playbackRates: [0.5, 1, 1.25, 1.5, 2], // Video Playback Speed ပြောင်းရန် (0.5x မှ 2x)
-            userActions: {
-                hotkeys: true // Keyboard Arrow Keys ဖြင့် ရှေ့/နောက် ကျော်ရန်
-            }
+            playbackRates: [0.5, 1, 1.25, 1.5, 2],
+            userActions: { hotkeys: true }
         });
 
-        // --- Double Tap Gesture Logic (10 Seconds Fast Forward & Rewind) ---
         player.ready(function() {
             const videoElement = player.el();
             let lastTapTime = 0;
             let tapTimeout;
 
             videoElement.addEventListener('touchstart', function(e) {
-                // Control Bar နှိပ်တာဆိုရင် Gesture မလုပ်ပါ
                 if (e.target.closest('.vjs-control-bar')) return;
 
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTapTime;
                 clearTimeout(tapTimeout);
 
-                // Double Tap စစ်ဆေးခြင်း (300ms အတွင်း ၂ ချက်နှိပ်ပါက)
                 if (tapLength < 300 && tapLength > 0) {
                     e.preventDefault();
                     const rect = videoElement.getBoundingClientRect();
@@ -141,19 +138,16 @@ function openPlayer(streamUrl) {
                     const playerWidth = rect.width;
 
                     if (touchX < playerWidth / 2) {
-                        // ဘယ်ဘက်ခြမ်းကို ၂ ချက်နှိပ်ပါက - ၁၀ စက္ကန့် နောက်ဆုတ်မည်
                         player.currentTime(Math.max(0, player.currentTime() - 10));
-                        showSkipText("<<Rewind");
+                        showSkipText("◄◄ 10s");
                     } else {
-                        // ညာဘက်ခြမ်းကို ၂ ချက်နှိပ်ပါက - ၁၀ စက္ကန့် ရှေ့ကျော်မည်
                         player.currentTime(Math.min(player.duration(), player.currentTime() + 10));
-                        showSkipText("Forward >>");
+                        showSkipText("10s ►►");
                     }
                 }
                 lastTapTime = currentTime;
             });
 
-            // 10s Indicator ခဏ ပေါ်စေမည့် Function
             function showSkipText(text) {
                 const overlay = document.getElementById('skipOverlay');
                 if (overlay) {
@@ -180,7 +174,7 @@ function closePlayer() {
     }
 }
 
-// URL Search Params မှ Model သို့မဟုတ် Category ကို ဖတ်၍ Video များ စစ်ထုတ်ပြသခြင်း
+// 7. Video List Render လုပ်ခြင်း
 function renderContent() {
     const container = document.getElementById('videoContainer');
     if (!container) return;
@@ -194,7 +188,6 @@ function renderContent() {
 
     let displayData = videoData.filter(v => !v.isVip);
 
-    // ၁။ Model အလိုက် စစ်ထုတ်ခြင်း
     if (selectedModel) {
         const pageTitle = document.getElementById('pageTitle');
         if (pageTitle) pageTitle.innerText = `Model: ${selectedModel}`;
@@ -204,7 +197,6 @@ function renderContent() {
         );
     }
 
-    // ၂။ Category အလိုက် စစ်ထုတ်ခြင်း
     if (selectedCategory) {
         const pageTitle = document.getElementById('pageTitle');
         if (pageTitle) pageTitle.innerText = `Category: ${selectedCategory}`;
@@ -214,20 +206,17 @@ function renderContent() {
         );
     }
 
-    // ၃။ Popular စာရင်း
     if (isPopular) {
         const pageTitle = document.getElementById('pageTitle');
         if (pageTitle) pageTitle.innerText = "Popular Videos";
         displayData.sort((a, b) => (b.views || 0) - (a.views || 0));
     }
 
-    // ဗီဒီယို မရှိပါက ပြသမည်
     if (displayData.length === 0) {
         container.innerHTML = '<p style="color:#888; text-align:center; padding:40px;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
         return;
     }
 
-    // Video Cards များကို Render လုပ်ခြင်း
     displayData.forEach(video => {
         container.innerHTML += `
             <div class="video-card" onclick="openPlayer('${video.stream_url}')">
@@ -245,5 +234,22 @@ function renderContent() {
     });
 }
 
+// 8. Model စာရင်း ခလုတ်များ ဖန်တီးပေးခြင်း
+function renderModels() {
+    const modelContainer = document.getElementById('modelContainer');
+    if (!modelContainer) return;
+
+    if (modelData.length === 0) {
+        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model များ မရှိသေးပါခင်ဗျာ။</p>';
+        return;
+    }
+
+    modelContainer.innerHTML = modelData.map(m => `
+        <a href="index.html?model=${encodeURIComponent(m.name)}" class="model-card" style="display:inline-block; margin:6px; padding:10px 18px; background:#222; color:#fff; border-radius:20px; text-decoration:none; font-size:14px; border:1px solid #333;">
+            <i class="fa-solid fa-user"></i> ${m.name}
+        </a>
+    `).join('');
+}
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
+"DOMContentLoaded", loadDataFromWorker);
