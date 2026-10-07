@@ -32,14 +32,29 @@
         <div class="card-grid" id="modelContainer"></div>
     </main>
 
-            <script src="js/app.js"></script>
+    <script src="js/app.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            if (modelData.length > 0) {
-                renderModels();
+        function renderContent() {
+            const container = document.getElementById('modelContainer');
+            if(!container) return;
+            container.innerHTML = '';
+
+            if (modelData.length === 0) {
+                container.innerHTML = '<p class="empty-msg">Model ဒေတာ မရှိသေးပါ။</p>';
+                return;
             }
-        });
+
+            modelData.forEach(model => {
+                container.innerHTML += `
+                    <div class="profile-card">
+                        <img src="${model.image || ''}" alt="${model.name || ''}">
+                        <h3>${model.name || ''}</h3>
+                    </div>
+                `;
+            });
+        }
+
+        document.addEventListener("DOMContentLoaded", renderContent);
     </script>
 </body>
 </html>
-
