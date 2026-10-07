@@ -179,6 +179,70 @@ function closePlayer() {
         modal.innerHTML = '';
     }
 }
+// URL Search Params မှ Model သို့မဟုတ် Category ကို ဖတ်၍ Video များ စစ်ထုတ်ပြသခြင်း
+function renderContent() {
+    const container = document.getElementById('videoContainer');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedModel = urlParams.get('model');
+    const selectedCategory = urlParams.get('category');
+    const isPopular = urlParams.get('sort') === 'popular';
+
+    let displayData = videoData.filter(v => !v.isVip);
+
+    // ၁။ Model အလိုက် စစ်ထုတ်ခြင်း
+    if (selectedModel) {
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = `Model: ${selectedModel}`;
+
+        displayData = displayData.filter(item => 
+            item.model && item.model.trim().toLowerCase() === selectedModel.trim().toLowerCase()
+        );
+    }
+
+    // ၂။ Category အလိုက် စစ်ထုတ်ခြင်း
+    if (selectedCategory) {
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = `Category: ${selectedCategory}`;
+
+        displayData = displayData.filter(item => 
+            item.category && item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
+        );
+    }
+
+    // ၃။ Popular စာရင်း
+    if (isPopular) {
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) pageTitle.innerText = "Popular Videos";
+        displayData.sort((a, b) => (b.views || 0) - (a.views || 0));
+    }
+
+    // ဗီဒီယို မရှိပါက ပြသမည်
+    if (displayData.length === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center; padding:40px;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
+        return;
+    }
+
+    // Video Cards များကို Render လုပ်ခြင်း
+    displayData.forEach(video => {
+        container.innerHTML += `
+            <div class="video-card" onclick="openPlayer('${video.stream_url}')">
+                <div class="thumbnail-box" style="position:relative;">
+                    <img src="${video.thumbnail}" alt="${video.title}" style="width:100%; border-radius:8px;">
+                    <span class="view-badge" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; padding:2px 6px; border-radius:4px; font-size:12px;">
+                        <i class="fa-solid fa-eye"></i> ${video.views || 0}
+                    </span>
+                </div>
+                <div class="video-info" style="padding:8px 0;">
+                    <h3 style="font-size:14px; margin:0; color:#fff;">${video.title}</h3>
+                </div>
+            </div>
+        `;
+    });
+}
 
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
