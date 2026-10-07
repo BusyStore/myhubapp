@@ -1,7 +1,3 @@
-// ==========================================
-// MY HUB - APP LOGIC & VIP ROUTING
-// ==========================================
-
 // WORKER BACKEND CONFIGURATION
 const WORKER_API_URL = "https://myhubapp.dathalay1.workers.dev/api/catalog";
 const STREAM_BASE_URL = "https://myhubapp.dathalay1.workers.dev/stream?file_id=";
@@ -11,7 +7,7 @@ let videoData = [];
 let categoryData = [];
 let modelData = [];
 
-// 1. Google Sheet မှ Data များကို Worker API မှတစ်ဆင့် Auto Fetch လုပ်ခြင်း
+// 1. Fetch Data
 async function loadDataFromWorker() {
     try {
         const response = await fetch(WORKER_API_URL);
@@ -30,32 +26,24 @@ async function loadDataFromWorker() {
             }));
 
             const categories = [...new Set(data.map(item => item.category).filter(Boolean))];
-            categoryData = categories.map(cat => ({ name: cat, image: '' }));
+            categoryData = categories.map(cat => ({ name: cat }));
 
             const models = [...new Set(data.map(item => item.model).filter(Boolean))];
-            modelData = models.map(m => ({ name: m, image: '' }));
+            modelData = models.map(m => ({ name: m }));
 
-            // Data ရရှိလာပါက စာမျက်နှာအလိုက် Auto Render လုပ်ပေးခြင်း
-            if (typeof renderContent === 'function') {
-                renderContent();
-            }
-            if (typeof renderModels === 'function') {
-                renderModels();
-            }
-            if (typeof handleSearch === 'function') {
-                handleSearch();
-            }
+            if (typeof renderContent === 'function') renderContent();
+            if (typeof renderModels === 'function') renderModels();
+            if (typeof handleSearch === 'function') handleSearch();
         }
     } catch (error) {
         console.error("Worker Data Fetch Error:", error);
     }
 }
 
-// 2. Side Menu ဖွင့်/ပိတ် (Toggle)
+// 2. Toggle Sidebar
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const mainContent = document.getElementById('mainContent');
-
     if (window.innerWidth > 768) {
         if (sidebar) sidebar.classList.toggle('closed');
         if (mainContent) mainContent.classList.toggle('expanded');
@@ -64,25 +52,9 @@ function toggleSidebar() {
     }
 }
 
-// 3. User Login စစ်ဆေးခြင်း
-function isLoggedIn() {
-    return localStorage.getItem("isLoggedIn") === "true";
-}
-
-// 4. VIP Zone စစ်ဆေးခြင်း
-function checkVipAccess() {
-    if (isLoggedIn()) {
-        window.location.href = "vip.html";
-    } else {
-        alert("VIP သို့ ဝင်ရောက်ရန် Account အရင်ပြုလုပ်ပေးပါခင်ဗျာ။");
-        window.location.href = "login.html";
-    }
-}
-
-// 5. Video Player Pop-up Modal
+// 3. Open Video Player
 function openPlayer(streamUrl) {
     let modal = document.getElementById('videoModal');
-    
     if (!modal) {
         modal = document.createElement('div');
         modal.id = 'videoModal';
@@ -93,10 +65,7 @@ function openPlayer(streamUrl) {
     modal.innerHTML = `
         <div id="modalContent" style="position:relative; width:95%; max-width:850px; background:#111; border-radius:8px; overflow:hidden;">
             <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:rgba(0,0,0,0.6); border:none; color:white; font-size:24px; cursor:pointer; z-index:10000; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
-            
-            <!-- သေးငယ်သေသပ်သော Skip Overlay Box -->
-            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:13px; font-weight:600; background:rgba(0,0,0,0.75); padding:6px 14px; border-radius:20px; display:none; pointer-events:none; z-index:9999; backdrop-filter:blur(4px); letter-spacing:0.5px;"></div>
-
+            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:13px; font-weight:600; background:rgba(0,0,0,0.75); padding:6px 14px; border-radius:20px; display:none; pointer-events:none; z-index:9999; backdrop-filter:blur(4px);"></div>
             <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay preload="auto" style="width:100%; height:450px;">
                 <source src="${streamUrl}" type="application/x-mpegURL">
             </video>
@@ -106,38 +75,24 @@ function openPlayer(streamUrl) {
     modal.style.display = 'flex';
 
     if (window.videojs) {
-        if (videojs.getPlayers()['my-video']) {
-            videojs.getPlayers()['my-video'].dispose();
-        }
-
+        if (videojs.getPlayers()['my-video']) videojs.getPlayers()['my-video'].dispose();
         const player = videojs('my-video', {
-            autoplay: true,
-            controls: true,
-            responsive: true,
-            fluid: true,
-            playbackRates: [0.5, 1, 1.25, 1.5, 2],
-            userActions: { hotkeys: true }
+            autoplay: true, controls: true, responsive: true, fluid: true,
+            playbackRates: [0.5, 1, 1.25, 1.5, 2]
         });
 
         player.ready(function() {
             const videoElement = player.el();
             let lastTapTime = 0;
-            let tapTimeout;
-
             videoElement.addEventListener('touchstart', function(e) {
                 if (e.target.closest('.vjs-control-bar')) return;
-
                 const currentTime = new Date().getTime();
                 const tapLength = currentTime - lastTapTime;
-                clearTimeout(tapTimeout);
-
                 if (tapLength < 300 && tapLength > 0) {
                     e.preventDefault();
                     const rect = videoElement.getBoundingClientRect();
                     const touchX = e.touches[0].clientX - rect.left;
-                    const playerWidth = rect.width;
-
-                    if (touchX < playerWidth / 2) {
+                    if (touchX < rect.width / 2) {
                         player.currentTime(Math.max(0, player.currentTime() - 10));
                         showSkipText("◄◄ 10s");
                     } else {
@@ -153,34 +108,29 @@ function openPlayer(streamUrl) {
                 if (overlay) {
                     overlay.innerText = text;
                     overlay.style.display = 'block';
-                    setTimeout(() => {
-                        overlay.style.display = 'none';
-                    }, 800);
+                    setTimeout(() => overlay.style.display = 'none', 800);
                 }
             }
         });
     }
 }
 
-// 6. Video Player ပိတ်ခြင်း
+// 4. Close Player
 function closePlayer() {
     const modal = document.getElementById('videoModal');
     if (modal) {
-        if (window.videojs && videojs.getPlayers()['my-video']) {
-            videojs.getPlayers()['my-video'].dispose();
-        }
+        if (window.videojs && videojs.getPlayers()['my-video']) videojs.getPlayers()['my-video'].dispose();
         modal.style.display = 'none';
         modal.innerHTML = '';
     }
 }
 
-// 7. Video List Render လုပ်ခြင်း
+// 5. Render Video Content
 function renderContent() {
     const container = document.getElementById('videoContainer');
     if (!container) return;
 
     container.innerHTML = '';
-
     const urlParams = new URLSearchParams(window.location.search);
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
@@ -189,31 +139,17 @@ function renderContent() {
     let displayData = videoData.filter(v => !v.isVip);
 
     if (selectedModel) {
-        const pageTitle = document.getElementById('pageTitle');
-        if (pageTitle) pageTitle.innerText = `Model: ${selectedModel}`;
-
-        displayData = displayData.filter(item => 
-            item.model && item.model.trim().toLowerCase() === selectedModel.trim().toLowerCase()
-        );
+        displayData = displayData.filter(item => item.model && item.model.trim().toLowerCase() === selectedModel.trim().toLowerCase());
     }
-
     if (selectedCategory) {
-        const pageTitle = document.getElementById('pageTitle');
-        if (pageTitle) pageTitle.innerText = `Category: ${selectedCategory}`;
-
-        displayData = displayData.filter(item => 
-            item.category && item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase()
-        );
+        displayData = displayData.filter(item => item.category && item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase());
     }
-
     if (isPopular) {
-        const pageTitle = document.getElementById('pageTitle');
-        if (pageTitle) pageTitle.innerText = "Popular Videos";
         displayData.sort((a, b) => (b.views || 0) - (a.views || 0));
     }
 
     if (displayData.length === 0) {
-        container.innerHTML = '<p style="color:#888; text-align:center; padding:40px;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
+        container.innerHTML = '<p style="color:#888; text-align:center; padding:40px; width:100%;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
         return;
     }
 
@@ -234,7 +170,7 @@ function renderContent() {
     });
 }
 
-// 8. Model စာရင်း ခလုတ်များ ဖန်တီးပေးခြင်း
+// 6. Render Model List
 function renderModels() {
     const modelContainer = document.getElementById('modelContainer');
     if (!modelContainer) return;
@@ -252,4 +188,3 @@ function renderModels() {
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
-"DOMContentLoaded", loadDataFromWorker);
