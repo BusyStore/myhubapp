@@ -92,7 +92,7 @@ function openPlayer(streamUrl) {
             <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:rgba(0,0,0,0.6); border:none; color:white; font-size:24px; cursor:pointer; z-index:10000; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
             
             <!-- Skip Indicator Overlay (Double Tap ရိုက်စဉ် 10s + / 10s - စာသားပြရန်) -->
-            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:20px; font-weight:bold; background:rgba(0,0,0,0.75); padding:10px 20px; border-radius:25px; display:none; pointer-events:none; z-index:9999;"></div>
+            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:13px; font-weight:600; background:rgba(0,0,0,0.75); padding:6px 14px; border-radius:20px; display:none; pointer-events:none; z-index:9999;"></div>
 
             <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay preload="auto" style="width:100%; height:450px;">
                 <source src="${streamUrl}" type="application/x-mpegURL">
