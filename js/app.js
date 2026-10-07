@@ -1,233 +1,63 @@
-// WORKER BACKEND CONFIGURATION
 const WORKER_API_URL = "https://myhubapp.dathalay1.workers.dev/api/catalog";
 const STREAM_BASE_URL = "https://myhubapp.dathalay1.workers.dev/stream?file_id=";
 
-// Global Data Stores
-let videoData = [];
-let categoryData = [];
-let modelData = [];
+document.addEventListener("DOMContentLoaded", () => {
+    fetchCatalog();
+});
 
-// 1. Fetch Data
-async function loadDataFromWorker() {
+async function fetchCatalog() {
     try {
         const response = await fetch(WORKER_API_URL);
         const data = await response.json();
 
-        if (Array.isArray(data)) {
-            videoData = data.map(item => ({
-                title: item.title || '',
-                category: item.category || '',
-                model: item.model || item.Model || '',
-                thumbnail: item.thumbnail || 'https://via.placeholder.com/300x180',
-                stream_url: `${STREAM_BASE_URL}${item.file_id}`,
-                isVip: String(item.isVip).toLowerCase() === 'true',
-                views: item.views || 0,
-                tags: [item.category, item.model || item.Model].filter(Boolean)
-            }));
+        // Header Row ကို ဖယ်ထုတ်ပြီး ဗီဒီယို Data များကို စစ်ထုတ်ခြင်း
+        const videoData = data.filter(item => item.file_id && item.file_id !== "file_id");
 
-            const categories = [...new Set(videoData.map(item => item.category).filter(Boolean))];
-            categoryData = categories.map(cat => ({ name: cat }));
-
-            const models = [...new Set(videoData.map(item => item.model).filter(Boolean))];
-            modelData = models.map(m => ({ name: m }));
-
-            if (document.getElementById('videoContainer')) {
-                renderContent();
-            }
-            if (document.getElementById('modelContainer')) {
-                renderModels();
-            }
-            if (typeof handleSearch === 'function') {
-                handleSearch();
-            }
-        }
+        renderContent(videoData);
     } catch (error) {
-        console.error("Worker Data Fetch Error:", error);
+        console.error("Error fetching catalog:", error);
     }
 }
 
-// 2. Toggle Sidebar
-function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
-    const mainContent = document.getElementById('mainContent');
-    if (window.innerWidth > 768) {
-        if (sidebar) sidebar.classList.toggle('closed');
-        if (mainContent) mainContent.classList.toggle('expanded');
-    } else {
-        if (sidebar) sidebar.classList.toggle('open');
-    }
-}
+function renderContent(videoData) {
+    // HTML ထဲက Container Element ကို ရှာခြင်း (အစ်ကို့ Container ID ပေါ်မူတည်၍ သုံးပေးပါ)
+    const container = document.getElementById("video-container") || document.querySelector(".video-grid") || document.body;
 
-// 3. User Login
-function isLoggedIn() {
-    return localStorage.getItem("isLoggedIn") === "true";
-}
-
-// 4. VIP Access
-function checkVipAccess() {
-    if (isLoggedIn()) {
-        window.location.href = "vip.html";
-    } else {
-        alert("VIP သို့ ဝင်ရောက်ရန် Account အရင်ပြုလုပ်ပေးပါခင်ဗျာ။");
-        window.location.href = "login.html";
-    }
-}
-
-// 5. Video Player Modal
-function openPlayer(streamUrl) {
-    let modal = document.getElementById('videoModal');
-    if (!modal) {
-        modal = document.createElement('div');
-        modal.id = 'videoModal';
-        modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;';
-        document.body.appendChild(modal);
-    }
-
-    modal.innerHTML = `
-        <div id="modalContent" style="position:relative; width:95%; max-width:850px; background:#111; border-radius:8px; overflow:hidden;">
-            <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:rgba(0,0,0,0.6); border:none; color:white; font-size:24px; cursor:pointer; z-index:10000; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
-            <div id="skipOverlay" style="position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); color:#fff; font-size:13px; font-weight:600; background:rgba(0,0,0,0.75); padding:6px 14px; border-radius:20px; display:none; pointer-events:none; z-index:9999; backdrop-filter:blur(4px);"></div>
-            <video id="my-video" class="video-js vjs-default-skin vjs-big-play-centered" controls autoplay preload="auto" style="width:100%; height:450px;">
-                <source src="${streamUrl}" type="application/x-mpegURL">
-            </video>
-        </div>
-    `;
-
-    modal.style.display = 'flex';
-
-    if (window.videojs) {
-        if (videojs.getPlayers()['my-video']) {
-            videojs.getPlayers()['my-video'].dispose();
-        }
-        const player = videojs('my-video', {
-            autoplay: true,
-            controls: true,
-            responsive: true,
-            fluid: true,
-            playbackRates: [0.5, 1, 1.25, 1.5, 2]
-        });
-
-        player.ready(function() {
-            const videoElement = player.el();
-            let lastTapTime = 0;
-            videoElement.addEventListener('touchstart', function(e) {
-                if (e.target.closest('.vjs-control-bar')) return;
-                const currentTime = new Date().getTime();
-                const tapLength = currentTime - lastTapTime;
-                if (tapLength < 300 && tapLength > 0) {
-                    e.preventDefault();
-                    const rect = videoElement.getBoundingClientRect();
-                    const touchX = e.touches[0].clientX - rect.left;
-                    if (touchX < rect.width / 2) {
-                        player.currentTime(Math.max(0, player.currentTime() - 10));
-                        showSkipText("◄◄ 10s");
-                    } else {
-                        player.currentTime(Math.min(player.duration(), player.currentTime() + 10));
-                        showSkipText("10s ►►");
-                    }
-                }
-                lastTapTime = currentTime;
-            });
-
-            function showSkipText(text) {
-                const overlay = document.getElementById('skipOverlay');
-                if (overlay) {
-                    overlay.innerText = text;
-                    overlay.style.display = 'block';
-                    setTimeout(() => { overlay.style.display = 'none'; }, 800);
-                }
-            }
-        });
-    }
-}
-
-// 6. Close Player
-function closePlayer() {
-    const modal = document.getElementById('videoModal');
-    if (modal) {
-        if (window.videojs && videojs.getPlayers()['my-video']) {
-            videojs.getPlayers()['my-video'].dispose();
-        }
-        modal.style.display = 'none';
-        modal.innerHTML = '';
-    }
-}
-
-// 7. Render Video Content
-function renderContent() {
-    const container = document.getElementById('videoContainer');
     if (!container) return;
 
-    container.innerHTML = '';
+    container.innerHTML = "";
 
-    const urlParams = new URLSearchParams(window.location.search);
-    const selectedModel = urlParams.get('model');
-    const selectedCategory = urlParams.get('category');
-    const isPopular = urlParams.get('sort') === 'popular';
-
-    let displayData = videoData.filter(v => !v.isVip);
-
-    if (selectedModel) {
-        const pageTitle = document.getElementById('pageTitle');
-        if (pageTitle) pageTitle.innerText = `Model: ${selectedModel}`;
-
-        displayData = displayData.filter(item => 
-            item.model && decodeURIComponent(item.model).trim().toLowerCase() === decodeURIComponent(selectedModel).trim().toLowerCase()
-        );
-    }
-
-    if (selectedCategory) {
-        const pageTitle = document.getElementById('pageTitle');
-        if (pageTitle) pageTitle.innerText = `Category: ${selectedCategory}`;
-
-        displayData = displayData.filter(item => 
-            item.category && decodeURIComponent(item.category).trim().toLowerCase() === decodeURIComponent(selectedCategory).trim().toLowerCase()
-        );
-    }
-
-    if (isPopular) {
-        const pageTitle = document.getElementById('pageTitle');
-        if (pageTitle) pageTitle.innerText = "Popular Videos";
-        displayData.sort((a, b) => (b.views || 0) - (a.views || 0));
-    }
-
-    if (displayData.length === 0) {
-        container.innerHTML = '<p style="color:#888; text-align:center; padding:40px; width:100%;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
+    if (!videoData || videoData.length === 0) {
+        container.innerHTML = "<p style='color:white; padding:20px;'>No videos found.</p>";
         return;
     }
 
-    displayData.forEach(video => {
-        container.innerHTML += `
-            <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
-                <div class="thumbnail-box" style="position:relative;">
-                    <img src="${video.thumbnail}" alt="${video.title}" style="width:100%; border-radius:8px; display:block;">
-                    <span class="view-badge" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; padding:2px 6px; border-radius:4px; font-size:12px;">
-                        <i class="fa-solid fa-eye"></i> ${video.views || 0}
-                    </span>
-                </div>
-                <div class="video-info" style="padding:8px 0;">
-                    <h3 style="font-size:14px; margin:0; color:#fff;">${video.title}</h3>
-                </div>
+    videoData.forEach(video => {
+        const card = document.createElement("div");
+        card.className = "video-card";
+        card.style.cssText = "margin: 10px; padding: 10px; background: #222; color: #fff; border-radius: 8px;";
+
+        card.innerHTML = `
+            <div class="thumbnail-box" style="margin-bottom: 8px;">
+                <img src="${video.thumbnail || 'https://via.placeholder.com/300x170'}" alt="${video.title}" style="width: 100%; border-radius: 4px; object-fit: cover;">
+            </div>
+            <div class="video-info">
+                <h3 style="margin: 5px 0; font-size: 16px;">${video.title}</h3>
+                <p style="margin: 5px 0; font-size: 12px; color: #aaa;">Category: ${video.category}</p>
+                <button onclick="playVideo('${video.file_id}')" style="padding: 8px 12px; background: #e50914; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; font-weight: bold;">Play Video</button>
             </div>
         `;
+        container.appendChild(card);
     });
 }
 
-// 8. Render Model List
-function renderModels() {
-    const modelContainer = document.getElementById('modelContainer');
-    if (!modelContainer) return;
-
-    if (modelData.length === 0) {
-        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model များ မရှိသေးပါခင်ဗျာ။</p>';
-        return;
+function playVideo(fileId) {
+    const videoPlayer = document.getElementById("main-player");
+    if (videoPlayer) {
+        videoPlayer.src = STREAM_BASE_URL + fileId;
+        videoPlayer.play();
+    } else {
+        // Video Player Tag မရှိပါက ပလေယာ Link ကို တိုက်ရိုက်ပွင့်စေခြင်း
+        window.open(STREAM_BASE_URL + fileId, "_blank");
     }
-
-    modelContainer.innerHTML = modelData.map(m => `
-        <a href="index.html?model=${encodeURIComponent(m.name)}" class="model-card" style="display:inline-block; margin:6px; padding:10px 18px; background:#222; color:#fff; border-radius:20px; text-decoration:none; font-size:14px; border:1px solid #333;">
-            <i class="fa-solid fa-user"></i> ${m.name}
-        </a>
-    `).join('');
 }
-
-document.addEventListener("DOMContentLoaded", loadDataFromWorker);
