@@ -11,7 +11,15 @@ async function fetchCatalog() {
         const data = await response.json();
 
         // Header Row ကို ဖယ်ထုတ်ပြီး ဗီဒီယို Data များကို စစ်ထုတ်ခြင်း
-        const videoData = data.filter(item => item.file_id && item.file_id !== "file_id");
+        const videoData = data.filter(item => item.file_id && item.file_id !== "file_id").map(item => {
+    let modelImg = item.model_image || '';
+    if (modelImg.includes('drive.google.com/file/d/')) {
+        const fileId = modelImg.split('/file/d/')[1].split('/')[0];
+        modelImg = `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+    return { ...item, model_image: modelImg };
+});
+
 
         renderContent(videoData);
     } catch (error) {
@@ -51,6 +59,14 @@ function renderContent(videoData) {
     });
 }
 
+const uniqueModels = [...new Set(videoData.map(item => item.model).filter(Boolean))];
+const modelData = uniqueModels.map(m => {
+    const found = videoData.find(v => v.model && v.model.trim().toLowerCase() === m.trim().toLowerCase());
+    return { name: m, image: (found && found.model_image) ? found.model_image : 'https://via.placeholder.com/150' };
+});
+if (document.getElementById("modelContainer")) renderModels(modelData);
+
+
 function playVideo(fileId) {
     const videoPlayer = document.getElementById("main-player");
     if (videoPlayer) {
@@ -60,4 +76,21 @@ function playVideo(fileId) {
         // Video Player Tag မရှိပါက ပလေယာ Link ကို တိုက်ရိုက်ပွင့်စေခြင်း
         window.open(STREAM_BASE_URL + fileId, "_blank");
     }
+}
+function renderModels(models) {
+    const container = document.getElementById("modelContainer");
+    if (!container) return;
+    container.innerHTML = "";
+    models.forEach(m => {
+        const card = document.createElement("a");
+        card.href = `index.html?model=${encodeURIComponent(m.name)}`;
+        card.style.cssText = "display: inline-block; margin: 10px; text-decoration: none; text-align: center; color: #fff;";
+        card.innerHTML = `
+            <div style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden; border: 2px solid #e50914; margin: 0 auto 8px auto;">
+                <img src="${m.image}" alt="${m.name}" style="width: 100%; height: 100%; object-fit: cover;">
+            </div>
+            <span style="font-size: 14px; font-weight: bold;">${m.name}</span>
+        `;
+        container.appendChild(card);
+    });
 }
