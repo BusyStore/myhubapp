@@ -143,11 +143,11 @@ function openPlayer(streamUrl) {
                     if (touchX < playerWidth / 2) {
                         // ဘယ်ဘက်ခြမ်းကို ၂ ချက်နှိပ်ပါက - ၁၀ စက္ကန့် နောက်ဆုတ်မည်
                         player.currentTime(Math.max(0, player.currentTime() - 10));
-                        showSkipText("<< 10s Rewind");
+                        showSkipText("<< 10s");
                     } else {
                         // ညာဘက်ခြမ်းကို ၂ ချက်နှိပ်ပါက - ၁၀ စက္ကန့် ရှေ့ကျော်မည်
                         player.currentTime(Math.min(player.duration(), player.currentTime() + 10));
-                        showSkipText("10s Forward >>");
+                        showSkipText("10s>>");
                     }
                 }
                 lastTapTime = currentTime;
