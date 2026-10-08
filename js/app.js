@@ -200,6 +200,8 @@ function renderModels() {
     const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!modelContainer) return;
 
+    // Responsive Grid Layout ထည့်သွင်းခြင်း (ဖုန်းမှာ ၂ တန်းမှ ၃ တန်းအထိ အလိုအလျောက် ညှိပေးမည်)
+    modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 10px;";
     modelContainer.innerHTML = '';
 
     if (modelData.length === 0) {
@@ -209,14 +211,17 @@ function renderModels() {
 
     modelData.forEach(m => {
         modelContainer.innerHTML += `
-            <a href="index.html?model=${encodeURIComponent(m.name)}" class="model-card" style="display:inline-block; margin:10px; text-decoration:none; text-align:center; color:#fff;">
-                <div style="width:110px; height:110px; border-radius:50%; overflow:hidden; border:2px solid #e50914; margin:0 auto 8px auto; background:#222;">
+            <a href="index.html?model=${encodeURIComponent(m.name)}" class="model-card" style="display:block; text-decoration:none; color:#fff; background:#1e1e1e; border-radius:10px; overflow:hidden; border:1px solid #333;">
+                <div style="width:100%; height:160px; overflow:hidden; background:#111;">
                     <img src="${m.image}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover;">
                 </div>
-                <span style="font-size:14px; font-weight:bold; color:#fff;">${m.name}</span>
+                <div style="padding:8px 4px; text-align:center;">
+                    <span style="font-size:13px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
+                </div>
             </a>
         `;
     });
 }
+
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
