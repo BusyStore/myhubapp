@@ -200,25 +200,26 @@ function renderModels() {
     const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!modelContainer) return;
 
-    // ဖုန်းမျက်နှာပြင်တွင် ၁ တန်းလျှင် ၂ ယောက် သို့မဟုတ် ၃ ယောက် ဆံ့မည့် Grid Layout
-    modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 10px;";
+    modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 10px;";
     modelContainer.innerHTML = '';
 
-    if (modelData.length === 0) {
+    if (!modelData || modelData.length === 0) {
         modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model များ မရှိသေးပါခင်ဗျာ။</p>';
         return;
     }
 
     modelData.forEach(m => {
         modelContainer.innerHTML += `
-            <a href="index.html?model=${encodeURIComponent(m.name)}" class="profile-card" style="display:block; text-decoration:none; padding:8px; background:#1e1e1e; border-radius:12px;">
-                <img src="${m.image}" alt="${m.name}">
-                <h3>${m.name}</h3>
+            <a href="index.html?model=${encodeURIComponent(m.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                    <img src="${m.image}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;">
+                </div>
+                <div style="padding:6px 4px;">
+                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
+                </div>
             </a>
         `;
     });
 }
-
-
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
