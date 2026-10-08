@@ -149,23 +149,20 @@ body {
 /* ==========================================
    GRID & CARD STYLES (Dynamic Rendering)
    ========================================== */
-.video-grid, 
-.card-grid {
+.video-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: 20px;
 }
 
-.video-card, 
-.profile-card img {
+.video-card {
     width: 100%;
-    height: 170px;
-    border-radius: 10px; /* 50% အစား 10px ပြောင်းလိုက်ပါ */
-    object-fit: cover;
-    margin-bottom: 8px;
-    border: 1px solid var(--accent-color);
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    transition: transform 0.2s ease, border-color 0.2s ease;
 }
-
 
 .video-card:hover, 
 .profile-card:hover {
@@ -211,24 +208,50 @@ body {
     overflow: hidden;
 }
 
-/* Profile / Category Card */
-.profile-card {
-    text-align: center;
-    padding: 20px 15px;
+/* ==========================================
+   MODEL CONTAINER & PROFILE CARDS (PORTRAIT)
+   ========================================== */
+#modelContainer, #model-container, .card-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)) !important;
+    gap: 12px !important;
+    padding: 10px 0 !important;
 }
 
-.profile-card img {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    object-fit: cover;
-    margin-bottom: 12px;
-    border: 2px solid var(--accent-color);
+/* Profile / Category Card ကို လေးထောင့်မတ်မတ် Card ပုံစံ ပြောင်းခြင်း */
+.profile-card, .model-card {
+    display: block !important;
+    width: 100% !important;
+    background-color: var(--card-bg) !important;
+    border-radius: 10px !important;
+    padding: 8px !important;
+    text-decoration: none !important;
+    text-align: center !important;
+    border: 1px solid var(--border-color) !important;
+    box-sizing: border-box !important;
+    transition: transform 0.2s ease, border-color 0.2s ease !important;
 }
 
-.profile-card h3 {
-    font-size: 1rem;
-    color: var(--text-color);
+/* အဝိုင်း (border-radius: 50%) ကို ဖြုတ်ပြီး ဒေါင်လိုက် လေးထောင့်မတ်မတ် Card လုပ်ခြင်း */
+.profile-card img, .model-card img, #modelContainer img, #model-container img {
+    width: 100% !important;
+    height: 150px !important;
+    border-radius: 6px !important; /* အဝိုင်းမဖြစ်စေရန် 6px ဟု သတ်မှတ်ထားပါသည် */
+    object-fit: cover !important;
+    margin-bottom: 6px !important;
+    border: none !important;
+    display: block !important;
+}
+
+.profile-card h3, .profile-card span, .model-card span {
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: var(--text-color) !important;
+    margin: 4px 0 0 0 !important;
+    display: block !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 /* ==========================================
@@ -253,13 +276,22 @@ body {
         padding: 20px 15px;
     }
 
-    .video-grid, 
-    .card-grid {
+    .video-grid {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 15px;
     }
 
     .thumbnail-box {
         height: 110px;
+    }
+
+    /* ဖုန်းမျက်နှာပြင်တွင် မော်ဒယ် ၁ တန်းလျှင် ၂-၃ ယောက် ဆံ့မည့် Grid */
+    #modelContainer, #model-container, .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+        gap: 10px !important;
+    }
+
+    .profile-card img, .model-card img {
+        height: 135px !important;
     }
 }
