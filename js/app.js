@@ -212,8 +212,9 @@ function renderModels() {
     const modelMap = new Map();
 
     modelData.forEach(item => {
-        const name = item.model || item.Model || item.name;
-        const img = item.model_image || item.image || item.thumbnail;
+        // Field Name မျိုးစုံကို စစ်ထုတ်ပေးထားပါသည်
+        const name = item.model || item.Model || item.name || item.Title;
+        const img = item.model_image || item['model_image'] || item.modelImage || item.image || item.thumbnail || item.Thumbnail;
 
         if (name && !modelMap.has(name)) {
             modelMap.set(name, true);
@@ -221,11 +222,19 @@ function renderModels() {
         }
     });
 
+    if (uniqueModels.length === 0) {
+        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model Data မတွေ့ပါခင်ဗျာ။</p>';
+        return;
+    }
+
     uniqueModels.forEach(m => {
+        // ပုံ မရှိရင် သို့မဟုတ် Error တက်ရင် အစားထိုးပြမည့် ပုံ
+        const displayImg = (m.image && m.image.trim() !== '') ? m.image : 'https://via.placeholder.com/150';
+
         modelContainer.innerHTML += `
             <a href="index.html?model=${encodeURIComponent(m.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
                 <div style="width:100%; height:135px; overflow:hidden; background:#000;">
-                    <img src="${m.image || 'https://via.placeholder.com/150'}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;">
+                    <img src="${displayImg}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
                 </div>
                 <div style="padding:6px 4px;">
                     <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
