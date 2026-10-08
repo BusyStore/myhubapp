@@ -208,11 +208,24 @@ function renderModels() {
         return;
     }
 
-    modelData.forEach(m => {
+    const uniqueModels = [];
+    const modelMap = new Map();
+
+    modelData.forEach(item => {
+        const name = item.model || item.Model || item.name;
+        const img = item.model_image || item.image || item.thumbnail;
+
+        if (name && !modelMap.has(name)) {
+            modelMap.set(name, true);
+            uniqueModels.push({ name: name, image: img });
+        }
+    });
+
+    uniqueModels.forEach(m => {
         modelContainer.innerHTML += `
             <a href="index.html?model=${encodeURIComponent(m.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
                 <div style="width:100%; height:135px; overflow:hidden; background:#000;">
-                    <img src="${m.image}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;">
+                    <img src="${m.image || 'https://via.placeholder.com/150'}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;">
                 </div>
                 <div style="padding:6px 4px;">
                     <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
