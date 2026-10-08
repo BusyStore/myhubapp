@@ -200,7 +200,7 @@ function renderModels() {
     const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!modelContainer) return;
 
-    // Responsive Grid Layout ထည့်သွင်းခြင်း (ဖုန်းမှာ ၂ တန်းမှ ၃ တန်းအထိ အလိုအလျောက် ညှိပေးမည်)
+    // ဖုန်းမျက်နှာပြင်တွင် ၁ တန်းလျှင် ၂ ယောက် သို့မဟုတ် ၃ ယောက် ဆံ့မည့် Grid Layout
     modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 10px;";
     modelContainer.innerHTML = '';
 
@@ -211,17 +211,14 @@ function renderModels() {
 
     modelData.forEach(m => {
         modelContainer.innerHTML += `
-            <a href="index.html?model=${encodeURIComponent(m.name)}" class="model-card" style="display:block; text-decoration:none; color:#fff; background:#1e1e1e; border-radius:10px; overflow:hidden; border:1px solid #333;">
-                <div style="width:100%; height:160px; overflow:hidden; background:#111;">
-                    <img src="${m.image}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover;">
-                </div>
-                <div style="padding:8px 4px; text-align:center;">
-                    <span style="font-size:13px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
-                </div>
+            <a href="index.html?model=${encodeURIComponent(m.name)}" class="profile-card" style="display:block; text-decoration:none; padding:8px; background:#1e1e1e; border-radius:12px;">
+                <img src="${m.image}" alt="${m.name}">
+                <h3>${m.name}</h3>
             </a>
         `;
     });
 }
+
 
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
