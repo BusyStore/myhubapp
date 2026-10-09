@@ -170,21 +170,26 @@ body {
     border-color: var(--accent-color) !important;
 }
 
-.thumbnail-box { 
-   width: 100%; 
-   height: 150px; 
-   background-color:#000; 
-   position: relative; 
-   overflow: hidden; 
-} 
+.thumbnail-box {
+    width: 100%;
+    aspect-ratio: 16 / 9; /* height: 150px; အစား ဒီလိုပြောင်းပါ */
+    background-color: #000;
+    position: relative;
+    overflow: hidden;
+}
+
+/* img ရော video ပါ Style ဝင်အောင် ပြင်လိုက်ပါ */
 .thumbnail-box img,
-.thumbnail-box video{ 
-   width: 100%; 
-   height: 100%; 
-   object-fit: cover; 
-   border-radius: 0 !important; 
-   border: none !important; 
-   display: block; 
+.thumbnail-box video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 0 !important;
+    border: none !important;
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .view-badge {
