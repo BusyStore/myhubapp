@@ -233,35 +233,32 @@ function renderContent() {
     }
 
     displayData.forEach(video => {
-        container.innerHTML += `
-            <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
-                <div class="thumbnail-box" style="position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 8px; background: #000;">
-    <video src="${video.thumbnail}" 
-           autoplay 
-           loop 
-           muted 
-           playsinline 
-           style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none;">
-    </video>
-    <span class="view-badge" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 12px; z-index: 2;">
-        <i class="fa-solid fa-eye"></i> ${video.views || 0}
-    </span>
-</div>
-            <div class="video-info" style="padding:8px 0;">
-                    <h3 style="font-size:14px; margin:0; color:#fff;">${video.title}</h3>
-                </div>
+    container.innerHTML += `
+        <div class="video-card" onclick="openPlayer('${video.stream_url}')">
+            <div class="thumbnail-box" style="position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 8px; background: #000;">
+                <video src="${video.thumbnail}" 
+                       autoplay 
+                       loop 
+                       muted 
+                       playsinline 
+                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none;">
+                </video>
+                <span class="view-badge" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 12px; z-index: 2;">
+                    <i class="fa-solid fa-eye"></i> ${video.views || 0}
+                </span>
             </div>
-            `;
-    });
-    document.querySelectorAll('.thumbnail-box video').forEach(video => {
-    video.muted = true; // Autoplay ရရန် Muted ဖြစ်နေရမည်
-    video.play().catch(error => {
-        console.log("Autoplay blocked or failed:", error);
-    });
+            <div class="video-info" style="padding: 8px 0;">
+                <h3 style="font-size: 14px; margin: 0; color: #fff;">${video.title || ''}</h3>
+            </div>
+        </div>
+    `;
 });
-}
 
-
+// Loop ပတ်ပြီးတာနဲ့ Autoplay ကို Force ဖွင့်ပေးရန်
+document.querySelectorAll('.thumbnail-box video').forEach(v => {
+    v.muted = true;
+    v.play().catch(e => console.log(e));
+});
 
 
 // 6. Render Model List (Image Cards)
