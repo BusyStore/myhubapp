@@ -232,29 +232,29 @@ function renderContent() {
         return;
     }
 
-    displayData.forEach(video => {
+   displayData.forEach(video => {
     container.innerHTML += `
-        <div class="video-card" onclick="openPlayer('${video.stream_url}')">
-            <div class="thumbnail-box" style="position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 8px; background: #000;">
+        <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="box-sizing: border-box; width: 100%; margin-bottom: 12px;">
+            <div class="thumbnail-box" style="box-sizing: border-box; position: relative; width: 100%; aspect-ratio: 16/9; overflow: hidden; border-radius: 8px; background: #000; line-height: 0;">
                 <video src="${video.thumbnail}" 
                        autoplay 
                        loop 
                        muted 
                        playsinline 
-                       style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none;">
+                       style="box-sizing: border-box; position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; display: block; border: none; margin: 0; padding: 0; pointer-events: none;">
                 </video>
-                <span class="view-badge" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 12px; z-index: 2;">
+                <span class="view-badge" style="box-sizing: border-box; position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 12px; line-height: 1.2; z-index: 2;">
                     <i class="fa-solid fa-eye"></i> ${video.views || 0}
                 </span>
             </div>
-            <div class="video-info" style="padding: 8px 0;">
-                <h3 style="font-size: 14px; margin: 0; color: #fff;">${video.title || ''}</h3>
+            <div class="video-info" style="box-sizing: border-box; padding: 6px 2px 0 2px;">
+                <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.4;">${video.title || ''}</h3>
             </div>
         </div>
     `;
 });
 
-// Loop ပတ်ပြီးတာနဲ့ Autoplay ကို Force ဖွင့်ပေးရန်
+// Autoplay Force run လုပ်ပေးခြင်း
 document.querySelectorAll('.thumbnail-box video').forEach(v => {
     v.muted = true;
     v.play().catch(e => console.log(e));
