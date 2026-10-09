@@ -33,31 +33,6 @@
     </main>
 
     <script src="js/app.js"></script>
-    <script>
-        function renderContent() {
-            const container = document.getElementById('categoryContainer');
-            if(!container) return;
-            container.innerHTML = '';
-
-            if (categoryData.length === 0) {
-                container.innerHTML = '<p class="empty-msg">Category မရှိသေးပါ။</p>';
-                return;
-            }
-
-            // Category Card ကို နှိပ်ပါက search.html သို့ q= parameter နှင့်တကွ ပို့ပေးမည်
-            categoryData.forEach(cat => {
-                const imgHTML = cat.image ? `<img src="${cat.image}" alt="${cat.name}">` : `<div style="font-size: 32px; padding: 20px 0;"><i class="fa-solid fa-hashtag"></i></div>`;
-                
-                container.innerHTML += `
-                    <div class="profile-card" onclick="window.location.href='search.html?q=${encodeURIComponent(cat.name)}'" style="cursor:pointer;">
-                        ${imgHTML}
-                        <h3>#${cat.name || ''}</h3>
-                    </div>
-                `;
-            });
-        }
-
-        document.addEventListener("DOMContentLoaded", renderContent);
-    </script>
+    
 </body>
 </html>
