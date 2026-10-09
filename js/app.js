@@ -319,7 +319,7 @@ function renderModels() {
     });
 }
 
-// 7. Render Categories List (category_name ကို သီးသန့် ဦးစားပေး စစ်ယူပေးထားသည်)
+// 7. Render Categories List
 function renderCategories() {
     const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
     if (!categoryContainer) return;
@@ -327,35 +327,34 @@ function renderCategories() {
     categoryContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
     categoryContainer.innerHTML = '';
 
-    const categoryMap = new Map();
-
+    const customCategoryImageMap = new Map();
     videoData.forEach(item => {
-        // 1. category_name သီးသန့် ရှိရင် ယူမည်
-        if (item.category_name && item.category_name.trim() !== '') {
-            const name = item.category_name.trim();
-            const key = name.toLowerCase();
-            if (!categoryMap.has(key)) {
-                const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : item.thumbnail;
-                categoryMap.set(key, { name: name, image: img });
-            }
+        const cName = item.category_name;
+        const cImg = item.category_image;
+        if (cName && cName.trim() !== '') {
+            customCategoryImageMap.set(cName.trim().toLowerCase(), cImg);
         }
+    });
 
-        // 2. VideoRow များမှ category column ဖြင့် စုဆောင်းခြင်း
-        if (item.category) {
-            const cats = item.category.split(',').map(c => c.trim());
+    const catMap = new Map();
+    videoData.forEach(item => {
+        const rawCategory = item.category || item.category_name;
+        if (rawCategory) {
+            const cats = rawCategory.split(',').map(c => c.trim());
             cats.forEach(c => {
                 if (c) {
                     const key = c.toLowerCase();
-                    if (!categoryMap.has(key)) {
-                        const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : item.thumbnail;
-                        categoryMap.set(key, { name: c, image: img });
+                    if (!catMap.has(key)) {
+                        const customImg = customCategoryImageMap.get(key);
+                        const finalImg = (customImg && customImg.trim() !== '') ? customImg : (item.thumbnail || 'https://via.placeholder.com/150');
+                        catMap.set(key, { name: c, image: finalImg });
                     }
                 }
             });
         }
     });
 
-    const uniqueCategories = Array.from(categoryMap.values());
+    const uniqueCategories = Array.from(catMap.values());
 
     if (uniqueCategories.length === 0) {
         categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
@@ -378,7 +377,4 @@ function renderCategories() {
     });
 }
 
-
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
-
-                
