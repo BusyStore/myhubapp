@@ -2,12 +2,12 @@
 const WORKER_API_URL = "https://myhubapp.dathalay1.workers.dev/api/catalog";
 const STREAM_BASE_URL = "https://myhubapp.dathalay1.workers.dev/stream?file_id=";
 
-// Global Data Stores (မူရင်း ၃ ခုလုံး ပြန်လည် ထည့်သွင်းထားပါသည်)
+// Global Data Stores
 let videoData = [];
 let modelData = [];
 let categoryData = [];
 
-// Google Drive Link ကို Direct Link ပြောင်းပေးသည့် Function
+// Google Drive Link ပြောင်းပေးသည့် Function
 function getDirectDriveLink(url) {
     if (!url) return '';
     const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -120,33 +120,33 @@ async function loadDataFromWorker() {
             });
             categoryData = Array.from(catMap.values());
 
-            // Render Containers
+            // DOM Containers
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
-            if (videoContainer) {
-                videoContainer.style.display = 'grid';
-                renderContent();
-            }
-
-            if (modelContainer) {
-                if (selectedModel) {
-                    modelContainer.style.display = 'none';
-                } else {
+            // Model / Category Filter ပြုလုပ်ထားပါက Video တင်ပြမည်၊ မဟုတ်ပါက သက်ဆိုင်ရာ Grid အလိုက်ပြမည်
+            if (selectedModel || selectedCategory) {
+                if (modelContainer) modelContainer.style.display = 'none';
+                if (categoryContainer) categoryContainer.style.display = 'none';
+                if (videoContainer) {
+                    videoContainer.style.display = 'grid';
+                    renderContent();
+                }
+            } else {
+                if (modelContainer) {
                     modelContainer.style.display = 'grid';
                     if (videoContainer) videoContainer.style.display = 'none';
                     renderModels();
                 }
-            }
-
-            if (categoryContainer) {
-                if (selectedCategory) {
-                    categoryContainer.style.display = 'none';
-                } else {
+                if (categoryContainer) {
                     categoryContainer.style.display = 'grid';
                     if (videoContainer) videoContainer.style.display = 'none';
                     renderCategories();
+                }
+                if (videoContainer && !modelContainer && !categoryContainer) {
+                    videoContainer.style.display = 'grid';
+                    renderContent();
                 }
             }
         }
@@ -155,17 +155,17 @@ async function loadDataFromWorker() {
     }
 }
 
-// 2. Toggle Sidebar (Side Menu ဖွင့်/ပိတ်)
+// 2. Toggle Sidebar (Side Menu ဖွင့်/ပိတ် လုပ်ဆောင်ချက်)
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar') || document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent') || document.querySelector('.main-content');
     if (sidebar) {
-        if (window.innerWidth > 768) {
-            sidebar.classList.toggle('closed');
-            if (mainContent) mainContent.classList.toggle('expanded');
-        } else {
-            sidebar.classList.toggle('open');
-        }
+        sidebar.classList.toggle('active');
+        sidebar.classList.toggle('open');
+        sidebar.classList.toggle('closed');
+    }
+    if (mainContent) {
+        mainContent.classList.toggle('expanded');
     }
 }
 
@@ -226,5 +226,141 @@ function openPlayer(streamUrl) {
                 if (overlay) {
                     overlay.innerText = text;
                     overlay.style.display = 'block';
-                    setTimeout(() =>
-                        
+                    setTimeout(() => overlay.style.display = 'none', 800);
+                }
+            }
+        });
+    }
+}
+
+// 4. Close Player
+function closePlayer() {
+    const modal = document.getElementById('videoModal');
+    if (modal) {
+        if (window.videojs && videojs.getPlayers()['my-video']) videojs.getPlayers()['my-video'].dispose();
+        modal.style.display = 'none';
+        modal.innerHTML = '';
+    }
+}
+
+// 5. Render Videos List
+function renderContent() {
+    const container = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const selectedModel = urlParams.get('model');
+    const selectedCategory = urlParams.get('category');
+
+    let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
+
+    if (selectedModel) {
+        displayData = displayData.filter(item => {
+            if (!item.model) return false;
+            const models = item.model.split(',').map(m => m.trim().toLowerCase());
+            return models.includes(selectedModel.trim().toLowerCase());
+        });
+    }
+
+    if (selectedCategory) {
+        displayData = displayData.filter(item => {
+            if (!item.category) return false;
+            const cats = item.category.split(',').map(c => c.trim().toLowerCase());
+            return cats.includes(selectedCategory.trim().toLowerCase());
+        });
+    }
+
+    if (displayData.length === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center; padding:40px; width:100%;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
+        return;
+    }
+
+    displayData.forEach(video => {
+        container.innerHTML += `
+            <div class="video-card" onclick="openPlayer('${video.stream_url}')">
+                <div class="thumbnail-box">
+                    <video src="${video.thumbnail}" 
+                           autoplay 
+                           loop 
+                           muted 
+                           playsinline 
+                           style="pointer-events: none;">
+                    </video>
+                    <span class="view-badge">
+                        <i class="fa-solid fa-eye"></i> ${video.views || 0}
+                    </span>
+                </div>
+                <div class="video-info" style="padding: 8px 10px;">
+                    <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3;">${video.title || ''}</h3>
+                </div>
+            </div>
+        `;
+    });
+
+    document.querySelectorAll('.thumbnail-box video').forEach(v => {
+        v.muted = true;
+        v.play().catch(e => console.log(e));
+    });
+}
+
+// 6. Render Models List
+function renderModels() {
+    const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
+    if (!modelContainer) return;
+
+    modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 10px;";
+    modelContainer.innerHTML = '';
+
+    if (!modelData || modelData.length === 0) {
+        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model မရှိသေးပါ။</p>';
+        return;
+    }
+
+    modelData.forEach(m => {
+        const displayImg = (m.image && m.image.trim() !== '') ? m.image : 'https://via.placeholder.com/150';
+
+        modelContainer.innerHTML += `
+            <a href="model.html?model=${encodeURIComponent(m.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                    <img src="${displayImg}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                </div>
+                <div style="padding:6px 4px;">
+                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
+                </div>
+            </a>
+        `;
+    });
+}
+
+// 7. Render Categories List
+function renderCategories() {
+    const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
+    if (!categoryContainer) return;
+
+    categoryContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
+    categoryContainer.innerHTML = '';
+
+    if (!categoryData || categoryData.length === 0) {
+        categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
+        return;
+    }
+
+    categoryData.forEach(cat => {
+        const displayImg = (cat.image && cat.image.trim() !== '') ? cat.image : 'https://via.placeholder.com/150';
+
+        categoryContainer.innerHTML += `
+            <a href="index.html?category=${encodeURIComponent(cat.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                    <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                </div>
+                <div style="padding:8px 4px;">
+                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat.name}</span>
+                </div>
+            </a>
+        `;
+    });
+}
+
+document.addEventListener("DOMContentLoaded", loadDataFromWorker);
