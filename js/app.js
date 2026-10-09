@@ -31,7 +31,7 @@ async function loadDataFromWorker() {
             const validData = data.filter(item => item && item.file_id && item.file_id !== "file_id");
 
             videoData = validData.map(item => {
-                let thumb = item.thumbnail || item.Thumbnail ||'';
+                let thumb = item.thumbnail ||'';
                 if (thumb.includes('drive.google.com/file/d/')) {
                     const fileId = thumb.split('/file/d/')[1].split('/')[0];
                     thumb = `https://lh3.googleusercontent.com/d/${fileId}`;
@@ -226,6 +226,7 @@ function renderContent() {
        loop 
        muted 
        playsinline
+       crossorigin="anonymous"
        style="width:100%; height:180px; object-fit:cover; border-radius:8px; display:block;">
 </video>
                     <span class="view-badge" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; padding:2px 6px; border-radius:4px; font-size:12px;">
