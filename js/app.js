@@ -56,6 +56,7 @@ async function loadDataFromWorker() {
                 return {
                     title: item.title || '',
                     category: item.category || '',
+                    category_image: item.category_image || item.categoryImage || '',
                     model: item.model || item.Model || '',
                     thumbnail: thumb || 'https://via.placeholder.com/300x180',
                     model_image: modelImg || thumb || 'https://via.placeholder.com/150',
@@ -76,13 +77,16 @@ async function loadDataFromWorker() {
             });
 
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
+            const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
+            // Video Grid ရှိပါက Render လုပ်ခြင်း
             if (videoContainer) {
                 videoContainer.style.display = 'grid';
                 renderContent();
             }
 
+            // Model Page ဖြစ်ပါက Render လုပ်ခြင်း
             if (modelContainer) {
                 if (selectedModel) {
                     modelContainer.style.display = 'none';
@@ -90,6 +94,17 @@ async function loadDataFromWorker() {
                     modelContainer.style.display = 'grid';
                     if (videoContainer) videoContainer.style.display = 'none';
                     renderModels();
+                }
+            }
+
+            // Category Page ဖြစ်ပါက Render လုပ်ခြင်း
+            if (categoryContainer) {
+                if (selectedCategory) {
+                    categoryContainer.style.display = 'none';
+                } else {
+                    categoryContainer.style.display = 'grid';
+                    if (videoContainer) videoContainer.style.display = 'none';
+                    renderCategories();
                 }
             }
         }
@@ -210,8 +225,14 @@ function renderContent() {
     if (selectedModel) {
         displayData = displayData.filter(item => item.model && item.model.trim().toLowerCase() === selectedModel.trim().toLowerCase());
     }
+
+    // Comma ခွဲထားသော Category စာရင်းမှ စစ်ထုတ်ခြင်း
     if (selectedCategory) {
-        displayData = displayData.filter(item => item.category && item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase());
+        displayData = displayData.filter(item => {
+            if (!item.category) return false;
+            const cats = item.category.split(',').map(c => c.trim().toLowerCase());
+            return cats.includes(selectedCategory.trim().toLowerCase());
+        });
     }
 
     if (displayData.length === 0) {
@@ -231,6 +252,127 @@ function renderContent() {
                            style="pointer-events: none;">
                     </video>
                     <span class="view-badge">
+                        <i class="fa-solid fa-eye"></i> ${video.views || 0}
+                    </span>
+                </div>
+                <div class="video-info" style="padding: 8px 10px;">
+                    <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3;">${video.title || ''}</h3>
+                </div>
+            </div>
+        `;
+    });
+
+    // Autoplay Force Run
+    document.querySelectorAll('.thumbnail-box video').forEach(v => {
+        v.muted = true;
+        v.play().catch(e => console.log(e));
+    });
+}
+
+// 6. Render Model List
+function renderModels() {
+    const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
+    if (!modelContainer) return;
+
+    modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 10px;";
+    modelContainer.innerHTML = '';
+
+    if (!modelData || modelData.length === 0) {
+        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model များ မရှိသေးပါခင်ဗျာ။</p>';
+        return;
+    }
+
+    const uniqueModels = [];
+    const modelMap = new Map();
+
+    modelData.forEach(item => {
+        const name = item.model || item.Model || item.name || item.Title;
+        const img = item.model_image || item['model_image'] || item.modelImage || item.image || item.thumbnail || item.Thumbnail;
+
+        if (name && !modelMap.has(name)) {
+            modelMap.set(name, true);
+            uniqueModels.push({ name: name, image: img });
+        }
+    });
+
+    if (uniqueModels.length === 0) {
+        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model Data မတွေ့ပါခင်ဗျာ။</p>';
+        return;
+    }
+
+    uniqueModels.forEach(m => {
+        const displayImg = (m.image && m.image.trim() !== '') ? m.image : 'https://via.placeholder.com/150';
+
+        modelContainer.innerHTML += `
+            <a href="model.html?model=${encodeURIComponent(m.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                    <img src="${displayImg}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                </div>
+                <div style="padding:6px 4px;">
+                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
+                </div>
+            </a>
+        `;
+    });
+}
+
+// 7. Render Categories List (Model Card Design အတိုင်း ပုံ ပါသည်)
+function renderCategories() {
+    const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
+    if (!categoryContainer) return;
+
+    categoryContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
+    categoryContainer.innerHTML = '';
+
+    if (!videoData || videoData.length === 0) {
+        categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
+        return;
+    }
+
+    const uniqueCategories = [];
+    const catMap = new Map();
+
+    videoData.forEach(item => {
+        if (item.category) {
+            const cats = item.category.split(',').map(c => c.trim());
+            cats.forEach(c => {
+                if (c && !catMap.has(c.toLowerCase())) {
+                    catMap.set(c.toLowerCase(), true);
+                    
+                    const catImg = item.category_image || item.categoryImage || item.thumbnail || 'https://via.placeholder.com/150';
+                    
+                    uniqueCategories.push({
+                        name: c,
+                        image: catImg
+                    });
+                }
+            });
+        }
+    });
+
+    if (uniqueCategories.length === 0) {
+        categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
+        return;
+    }
+
+    uniqueCategories.forEach(cat => {
+        const displayImg = (cat.image && cat.image.trim() !== '') ? cat.image : 'https://via.placeholder.com/150';
+
+        categoryContainer.innerHTML += `
+            <a href="index.html?category=${encodeURIComponent(cat.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                    <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                </div>
+                <div style="padding:8px 4px;">
+                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat.name}</span>
+                </div>
+            </a>
+        `;
+    });
+}
+
+document.addEventListener("DOMContentLoaded", loadDataFromWorker);
+"view-badge">
                         <i class="fa-solid fa-eye"></i> ${video.views || 0}
                     </span>
                 </div>
