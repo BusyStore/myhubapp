@@ -242,7 +242,7 @@ function renderContent() {
        muted 
        playsinline
        preload="auto"
-       style="width:100%; height:180px; object-fit:cover; border-radius:8px; display:block;pionter-event=none;">
+       style="width:100%; height:180px; object-fit:cover; border-radius:8px; display:block; pionter-events=none;">
 </video>
                     <span class="view-badge" style="position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,0.7); color:#fff; padding:2px 6px; border-radius:4px; font-size:12px;">
                         <i class="fa-solid fa-eye"></i> ${video.views || 0}
