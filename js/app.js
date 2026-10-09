@@ -7,7 +7,7 @@ let videoData = [];
 let modelData = [];
 let categoryData = [];
 
-// Google Drive Link ပြောင်းပေးသည့် Function
+// Google Drive Link ကို Direct Link ပြောင်းပေးသည့် Function
 function getDirectDriveLink(url) {
     if (!url) return '';
     const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -39,93 +39,67 @@ async function loadDataFromWorker() {
         if (Array.isArray(data)) {
             const validData = data.filter(item => item && typeof item === 'object');
 
-            // 1. Process Video Data
+            // Video Data များကို Map လုပ်ခြင်း
             videoData = validData.map(item => {
-                const normalized = {};
-                Object.keys(item).forEach(key => {
-                    normalized[key.trim().toLowerCase()] = item[key];
-                });
+                let thumb = getDirectDriveLink(item.thumbnail);
+                let mImg = getDirectDriveLink(item.model_image || item.modelImage);
+                let cImg = getDirectDriveLink(item.category_image || item.categoryImage);
 
-                let thumb = getDirectDriveLink(normalized['thumbnail']);
-                let mImg = getDirectDriveLink(normalized['model_image'] || normalized['modelimage']);
-                let cImg = getDirectDriveLink(normalized['category_image'] || normalized['categoryimage']);
-
-                const rawIsVip = normalized['is_vip'] !== undefined ? normalized['is_vip'] : normalized['isvip'];
+                const rawIsVip = item.is_Vip !== undefined ? item.is_Vip : (item.is_vip !== undefined ? item.is_vip : item.isVip);
 
                 return {
-                    title: normalized['title'] || '',
-                    model: normalized['model'] || '',
-                    category: normalized['category'] || '',
-                    views: normalized['views'] || 0,
-                    thumbnail: thumb || 'https://via.placeholder.com/300x180',
-                    file_id: normalized['file_id'] || '',
-                    stream_url: normalized['file_id'] ? `${STREAM_BASE_URL}${normalized['file_id']}` : '',
-                    isVip: String(rawIsVip || '').toLowerCase() === 'true',
-                    model_name: normalized['model_name'] || '',
+                    title: item.title || '',
+                    model: item.model || '',
+                    model_name: item.model_name || item.model || '',
                     model_image: mImg,
-                    category_name: normalized['category_name'] || '',
-                    category_image: cImg
+                    category: item.category || '',
+                    category_name: item.category_name || item.category || '',
+                    category_image: cImg,
+                    views: item.views || 0,
+                    thumbnail: thumb || 'https://via.placeholder.com/300x180',
+                    file_id: item.file_id || '',
+                    stream_url: item.file_id ? `${STREAM_BASE_URL}${item.file_id}` : '',
+                    isVip: String(rawIsVip || '').toLowerCase() === 'true'
                 };
             });
 
-            // 2. Process Model Data into modelData Global Store
-            const modelMap = new Map();
+            // Model Data များကို စုဆောင်းခြင်း
+            const customModelMap = new Map();
             videoData.forEach(item => {
-                if (item.model_name && item.model_name.trim() !== '') {
-                    const m = item.model_name.trim();
-                    const key = m.toLowerCase();
-                    if (!modelMap.has(key)) {
-                        const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : (item.thumbnail || 'https://via.placeholder.com/150');
-                        modelMap.set(key, { name: m, image: img });
-                    }
-                }
-                if (item.model) {
-                    const models = item.model.split(',').map(m => m.trim());
+                const mName = item.model_name || item.model;
+                if (mName) {
+                    const models = mName.split(',').map(m => m.trim());
                     models.forEach(m => {
-                        if (m) {
-                            const key = m.toLowerCase();
-                            if (!modelMap.has(key)) {
-                                const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : (item.thumbnail || 'https://via.placeholder.com/150');
-                                modelMap.set(key, { name: m, image: img });
-                            }
+                        if (m && !customModelMap.has(m.toLowerCase())) {
+                            const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : item.thumbnail;
+                            customModelMap.set(m.toLowerCase(), { name: m, image: img });
                         }
                     });
                 }
             });
-            modelData = Array.from(modelMap.values());
+            modelData = Array.from(customModelMap.values());
 
-            // 3. Process Category Data into categoryData Global Store
-            const catMap = new Map();
+            // Category Data များကို စုဆောင်းခြင်း
+            const customCategoryMap = new Map();
             videoData.forEach(item => {
-                if (item.category_name && item.category_name.trim() !== '') {
-                    const c = item.category_name.trim();
-                    const key = c.toLowerCase();
-                    if (!catMap.has(key)) {
-                        const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : (item.thumbnail || 'https://via.placeholder.com/150');
-                        catMap.set(key, { name: c, image: img });
-                    }
-                }
-                if (item.category) {
-                    const cats = item.category.split(',').map(c => c.trim());
+                const cName = item.category_name || item.category;
+                if (cName) {
+                    const cats = cName.split(',').map(c => c.trim());
                     cats.forEach(c => {
-                        if (c) {
-                            const key = c.toLowerCase();
-                            if (!catMap.has(key)) {
-                                const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : (item.thumbnail || 'https://via.placeholder.com/150');
-                                catMap.set(key, { name: c, image: img });
-                            }
+                        if (c && !customCategoryMap.has(c.toLowerCase())) {
+                            const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : item.thumbnail;
+                            customCategoryMap.set(c.toLowerCase(), { name: c, image: img });
                         }
                     });
                 }
             });
-            categoryData = Array.from(catMap.values());
+            categoryData = Array.from(customCategoryMap.values());
 
-            // DOM Containers
+            // Render Containers
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
-            // Model / Category Filter ပြုလုပ်ထားပါက Video တင်ပြမည်၊ မဟုတ်ပါက သက်ဆိုင်ရာ Grid အလိုက်ပြမည်
             if (selectedModel || selectedCategory) {
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) categoryContainer.style.display = 'none';
@@ -134,19 +108,17 @@ async function loadDataFromWorker() {
                     renderContent();
                 }
             } else {
+                if (videoContainer) {
+                    videoContainer.style.display = 'grid';
+                    renderContent();
+                }
                 if (modelContainer) {
                     modelContainer.style.display = 'grid';
-                    if (videoContainer) videoContainer.style.display = 'none';
                     renderModels();
                 }
                 if (categoryContainer) {
                     categoryContainer.style.display = 'grid';
-                    if (videoContainer) videoContainer.style.display = 'none';
                     renderCategories();
-                }
-                if (videoContainer && !modelContainer && !categoryContainer) {
-                    videoContainer.style.display = 'grid';
-                    renderContent();
                 }
             }
         }
@@ -155,12 +127,11 @@ async function loadDataFromWorker() {
     }
 }
 
-// 2. Toggle Sidebar (Side Menu ဖွင့်/ပိတ် လုပ်ဆောင်ချက်)
+// 2. Toggle Sidebar (Side Menu ဖွင့်/ပိတ်)
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar') || document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent') || document.querySelector('.main-content');
     if (sidebar) {
-        sidebar.classList.toggle('active');
         sidebar.classList.toggle('open');
         sidebar.classList.toggle('closed');
     }
@@ -243,7 +214,7 @@ function closePlayer() {
     }
 }
 
-// 5. Render Videos List
+// 5. Render Videos
 function renderContent() {
     const container = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
     if (!container) return;
@@ -258,16 +229,18 @@ function renderContent() {
 
     if (selectedModel) {
         displayData = displayData.filter(item => {
-            if (!item.model) return false;
-            const models = item.model.split(',').map(m => m.trim().toLowerCase());
+            const mTarget = item.model_name || item.model;
+            if (!mTarget) return false;
+            const models = mTarget.split(',').map(m => m.trim().toLowerCase());
             return models.includes(selectedModel.trim().toLowerCase());
         });
     }
 
     if (selectedCategory) {
         displayData = displayData.filter(item => {
-            if (!item.category) return false;
-            const cats = item.category.split(',').map(c => c.trim().toLowerCase());
+            const cTarget = item.category_name || item.category;
+            if (!cTarget) return false;
+            const cats = cTarget.split(',').map(c => c.trim().toLowerCase());
             return cats.includes(selectedCategory.trim().toLowerCase());
         });
     }
@@ -305,7 +278,7 @@ function renderContent() {
     });
 }
 
-// 6. Render Models List
+// 6. Render Models
 function renderModels() {
     const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!modelContainer) return;
@@ -334,7 +307,7 @@ function renderModels() {
     });
 }
 
-// 7. Render Categories List
+// 7. Render Categories
 function renderCategories() {
     const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
     if (!categoryContainer) return;
