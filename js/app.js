@@ -164,6 +164,18 @@ function renderContent() {
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
 
+    // ★ Header Title ကို Dynamic ပြောင်းပေးမည့် အပိုင်း ★
+    const pageTitle = document.getElementById('pageTitle') || document.querySelector('.header-title') || document.querySelector('h2');
+    if (pageTitle) {
+        if (selectedModel) {
+            pageTitle.innerText = selectedModel;
+        } else if (selectedCategory) {
+            pageTitle.innerText = selectedCategory;
+        } else {
+            pageTitle.innerText = "Latest Videos";
+        }
+    }
+
     let displayData = videoData.filter(v => !v.isVip);
 
     if (selectedModel) {
@@ -194,6 +206,7 @@ function renderContent() {
         `;
     });
 }
+
 
 // 6. Render Model List (Image Cards)
 function renderModels() {
