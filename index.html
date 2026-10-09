@@ -81,7 +81,7 @@
                 container.innerHTML += `
                     <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
                         <div class="thumbnail-box">
-                            <img src="${video.thumbnail || ''}" alt="${video.title || ''}">
+                            <video src="${video.thumbnail || ''}" alt="${video.title || ''}">
                             <span class="view-badge"><i class="fa-solid fa-eye"></i> ${video.views || 0}</span>
                         </div>
                         <div class="video-info">
