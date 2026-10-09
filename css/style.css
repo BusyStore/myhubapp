@@ -172,19 +172,22 @@ body {
 
 .thumbnail-box {
     width: 100%;
-    height: 150px;
+    aspect-ratio: 16 / 9;
     background-color: #000;
     position: relative;
     overflow: hidden;
 }
 
-.thumbnail-box img {
+.thumbnail-box video {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    border-radius: 0 !important; /* အထဲကပုံတွင် border-radius မရှိစေဘဲ ကတ်ဘောင်အတိုင်း ကွက်တိဖြစ်စေရန် */
+    border-radius: 0 !important;
     border: none !important;
     display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
 }
 
 .view-badge {
