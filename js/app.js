@@ -10,13 +10,17 @@ let modelData = [];
 // Google Drive Link ကို Direct Link ပြောင်းပေးသည့် Function
 function getDirectDriveLink(url) {
     if (!url) return '';
+    
+    // Google Drive Link ဖြစ်ပါက ID ကို ထုတ်ယူမည်
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
         const fileId = match[1];
+        // MP4 Video Stream အတွက် Direct Link ပုံစံ
         return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
     return url;
 }
+
 
 // 1. Fetch Data From Worker
 async function loadDataFromWorker() {
@@ -38,10 +42,11 @@ async function loadDataFromWorker() {
         const data = await response.json();
 
         if (Array.isArray(data)) {
+            // Header Row ဖယ်ထုတ်ခြင်းနှင့် Link ပြင်ဆင်ခြင်း
             const validData = data.filter(item => item && item.file_id && item.file_id !== "file_id");
 
             videoData = validData.map(item => {
-                let thumb = item.thumbnail || '';
+                let thumb = item.thumbnail ||'';
                 if (thumb.includes('drive.google.com/file/d/')) {
                     const fileId = thumb.split('/file/d/')[1].split('/')[0];
                     thumb = `https://lh3.googleusercontent.com/d/${fileId}`;
@@ -66,6 +71,7 @@ async function loadDataFromWorker() {
                 };
             });
 
+            // Model စာရင်း ခွဲထုတ်ခြင်း
             const uniqueModels = [...new Set(videoData.map(item => item.model).filter(Boolean))];
             modelData = uniqueModels.map(m => {
                 const found = videoData.find(v => v.model && v.model.trim().toLowerCase() === m.trim().toLowerCase());
@@ -75,14 +81,19 @@ async function loadDataFromWorker() {
                 };
             });
 
+            // ==========================================
+            // ★ RENDER LOGIC (index.html မှာ Video ပေါ်စေမည့် အပိုင်း) ★
+            // ==========================================
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
+            // index.html သို့မဟုတ် Video Container ရှိသည့် Page များတွင် Render လုပ်ခြင်း
             if (videoContainer) {
                 videoContainer.style.display = 'grid';
                 renderContent();
             }
 
+            // model.html ဖြစ်ပါက Model Container ပေါ် မပေါ် ထိန်းချုပ်ခြင်း
             if (modelContainer) {
                 if (selectedModel) {
                     modelContainer.style.display = 'none';
@@ -97,6 +108,7 @@ async function loadDataFromWorker() {
         console.error("Worker Data Fetch Error:", error);
     }
 }
+
 
 // 2. Toggle Sidebar
 function toggleSidebar() {
@@ -194,6 +206,7 @@ function renderContent() {
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
 
+    // ★ Header Title ကို Dynamic ပြောင်းပေးမည့် အပိုင်း ★
     const pageTitle = document.getElementById('pageTitle') || document.querySelector('.header-title') || document.querySelector('h2');
     if (pageTitle) {
         if (selectedModel) {
@@ -212,7 +225,10 @@ function renderContent() {
     }
     if (selectedCategory) {
         displayData = displayData.filter(item => item.category && item.category.trim().toLowerCase() === selectedCategory.trim().toLowerCase());
-t-align:center; padding:40px; width:100%;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
+    }
+
+    if (displayData.length === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center; padding:40px; width:100%;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
         return;
     }
 
