@@ -294,5 +294,62 @@ function renderModels() {
         `;
     });
 }
+// 7. Render Categories List (Model Card Design အတိုင်း ပုံ ပါသည်)
+function renderCategories() {
+    const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
+    if (!categoryContainer) return;
+
+    categoryContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
+    categoryContainer.innerHTML = '';
+
+    if (!videoData || videoData.length === 0) {
+        categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
+        return;
+    }
+
+    // Unique Categories စာရင်းနှင့် ၎င်းတို့၏ Image များကို ရှာဖွေခြင်း
+    const uniqueCategories = [];
+    const catMap = new Map();
+
+    videoData.forEach(item => {
+        if (item.category) {
+            const cats = item.category.split(',').map(c => c.trim());
+            cats.forEach(c => {
+                if (c && !catMap.has(c.toLowerCase())) {
+                    catMap.set(c.toLowerCase(), true);
+                    
+                    // Category Image ရှိရင်ယူမည်၊ မရှိရင် Video Thumbnail ကို Auto သုံးမည်
+                    const catImg = item.category_image || item.categoryImage || item.thumbnail || 'https://via.placeholder.com/150';
+                    
+                    uniqueCategories.push({
+                        name: c,
+                        image: catImg
+                    });
+                }
+            });
+        }
+    });
+
+    if (uniqueCategories.length === 0) {
+        categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
+        return;
+    }
+
+    // Model Card ပုံစံအတိုင်း Layout Render လုပ်ခြင်း
+    uniqueCategories.forEach(cat => {
+        const displayImg = (cat.image && cat.image.trim() !== '') ? cat.image : 'https://via.placeholder.com/150';
+
+        categoryContainer.innerHTML += `
+            <a href="index.html?category=${encodeURIComponent(cat.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                    <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block; border-radius:0; border:none;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                </div>
+                <div style="padding:8px 4px;">
+                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat.name}</span>
+                </div>
+            </a>
+        `;
+    });
+}
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
