@@ -9,7 +9,6 @@ let modelData = [];
 
 // 1. Fetch Data From Worker
 async function loadDataFromWorker() {
-    // Page စတင်ချိန်တွင် URL ၌ model/category ပါမပါ စစ်ဆေးပြီး Header Title ကို ချက်ချင်း ပြောင်းပေးခြင်း
     const urlParams = new URLSearchParams(window.location.search);
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
@@ -32,14 +31,12 @@ async function loadDataFromWorker() {
             const validData = data.filter(item => item && item.file_id && item.file_id !== "file_id");
 
             videoData = validData.map(item => {
-                // Video Thumbnail Link
                 let thumb = item.thumbnail || '';
                 if (thumb.includes('drive.google.com/file/d/')) {
                     const fileId = thumb.split('/file/d/')[1].split('/')[0];
                     thumb = `https://lh3.googleusercontent.com/d/${fileId}`;
                 }
 
-                // Model Image Link
                 let modelImg = item.model_image || '';
                 if (modelImg.includes('drive.google.com/file/d/')) {
                     const fileId = modelImg.split('/file/d/')[1].split('/')[0];
@@ -69,34 +66,34 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // Render Logic (index.html နှင့် model.html နှစ်ခုလုံးအတွက်)
+            // ==========================================
+            // ★ RENDER LOGIC (index.html မှာ Video ပေါ်စေမည့် အပိုင်း) ★
+            // ==========================================
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
-            // ၁။ model.html မှာ ရှိနေလျှင် (modelContainer ရှိသည်)
+            // index.html သို့မဟုတ် Video Container ရှိသည့် Page များတွင် Render လုပ်ခြင်း
+            if (videoContainer) {
+                videoContainer.style.display = 'grid';
+                renderContent();
+            }
+
+            // model.html ဖြစ်ပါက Model Container ပေါ် မပေါ် ထိန်းချုပ်ခြင်း
             if (modelContainer) {
                 if (selectedModel) {
                     modelContainer.style.display = 'none';
-                    if (videoContainer) {
-                        videoContainer.style.display = 'grid';
-                        renderContent();
-                    }
                 } else {
                     modelContainer.style.display = 'grid';
+                    if (videoContainer) videoContainer.style.display = 'none';
                     renderModels();
                 }
-            }
-
-            // ၂။ index.html မှာ ရှိနေလျှင် (modelContainer မရှိ၊ videoContainer ပဲ ရှိသည်)
-            if (videoContainer && !modelContainer) {
-                videoContainer.style.display = 'grid';
-                renderContent();
             }
         }
     } catch (error) {
         console.error("Worker Data Fetch Error:", error);
     }
 }
+
 
 // 2. Toggle Sidebar
 function toggleSidebar() {
