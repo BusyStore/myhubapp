@@ -51,49 +51,6 @@
         <div style="width:95%; max-width:850px; background:#111; position:relative; border-radius:8px; overflow:hidden;" id="modalContent"></div>
     </div>
 
-    <script src="js/app.js"></script>
-    <script>
-        function renderContent() {
-            const container = document.getElementById('videoContainer');
-            if(!container) return;
-            container.innerHTML = '';
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const isPopular = urlParams.get('sort') === 'popular';
-
-            if(isPopular) {
-                const pageTitle = document.getElementById('pageTitle');
-                if (pageTitle) pageTitle.innerText = "Popular Videos";
-            }
-
-            let displayData = videoData.filter(v => !v.isVip);
-
-            if (isPopular) {
-                displayData.sort((a, b) => (b.views || 0) - (a.views || 0));
-            }
-
-            if (displayData.length === 0) {
-                container.innerHTML = '<p class="empty-msg">ဗီဒီယို မရှိသေးပါ။</p>';
-                return;
-            }
-
-            // Video Card နှိပ်ပါက openPlayer ခေါ်ယူပြီး m3u8 stream မည်
-            displayData.forEach(video => {
-                container.innerHTML += `
-                    <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
-                        <div class="thumbnail-box">
-                            <img src="${video.thumbnail || ''}" alt="${video.title || ''}">
-                            <span class="view-badge"><i class="fa-solid fa-eye"></i> ${video.views || 0}</span>
-                        </div>
-                        <div class="video-info">
-                            <h3>${video.title || ''}</h3>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        document.addEventListener("DOMContentLoaded", renderContent);
-    </script>
 </body>
 </html>
