@@ -256,6 +256,13 @@ function renderContent() {
     });
 }
 
+document.querySelectorAll('.thumbnail-box video').forEach(video => {
+    video.muted = true; // Autoplay ရရန် Muted ဖြစ်နေရမည်
+    video.play().catch(error => {
+        console.log("Autoplay blocked or failed:", error);
+    });
+});
+
 
 // 6. Render Model List (Image Cards)
 function renderModels() {
