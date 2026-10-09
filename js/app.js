@@ -10,17 +10,13 @@ let modelData = [];
 // Google Drive Link ကို Direct Link ပြောင်းပေးသည့် Function
 function getDirectDriveLink(url) {
     if (!url) return '';
-    
-    // Google Drive Link ဖြစ်ပါက ID ကို ထုတ်ယူမည်
     const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
     if (match && match[1]) {
         const fileId = match[1];
-        // MP4 Video Stream အတွက် Direct Link ပုံစံ
         return `https://lh3.googleusercontent.com/d/${fileId}`;
     }
     return url;
 }
-
 
 // 1. Fetch Data From Worker
 async function loadDataFromWorker() {
@@ -42,11 +38,10 @@ async function loadDataFromWorker() {
         const data = await response.json();
 
         if (Array.isArray(data)) {
-            // Header Row ဖယ်ထုတ်ခြင်းနှင့် Link ပြင်ဆင်ခြင်း
             const validData = data.filter(item => item && item.file_id && item.file_id !== "file_id");
 
             videoData = validData.map(item => {
-                let thumb = item.thumbnail ||'';
+                let thumb = item.thumbnail || '';
                 if (thumb.includes('drive.google.com/file/d/')) {
                     const fileId = thumb.split('/file/d/')[1].split('/')[0];
                     thumb = `https://lh3.googleusercontent.com/d/${fileId}`;
@@ -71,7 +66,6 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // Model စာရင်း ခွဲထုတ်ခြင်း
             const uniqueModels = [...new Set(videoData.map(item => item.model).filter(Boolean))];
             modelData = uniqueModels.map(m => {
                 const found = videoData.find(v => v.model && v.model.trim().toLowerCase() === m.trim().toLowerCase());
@@ -81,19 +75,14 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // ==========================================
-            // ★ RENDER LOGIC (index.html မှာ Video ပေါ်စေမည့် အပိုင်း) ★
-            // ==========================================
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
-            // index.html သို့မဟုတ် Video Container ရှိသည့် Page များတွင် Render လုပ်ခြင်း
             if (videoContainer) {
                 videoContainer.style.display = 'grid';
                 renderContent();
             }
 
-            // model.html ဖြစ်ပါက Model Container ပေါ် မပေါ် ထိန်းချုပ်ခြင်း
             if (modelContainer) {
                 if (selectedModel) {
                     modelContainer.style.display = 'none';
@@ -109,8 +98,7 @@ async function loadDataFromWorker() {
     }
 }
 
-
-// 2. Toggle Sidebar
+// 2. Toggle Sidebar (Menu ဖွင့်/ပိတ်)
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar');
     const mainContent = document.getElementById('mainContent');
@@ -206,7 +194,6 @@ function renderContent() {
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
 
-    // ★ Header Title ကို Dynamic ပြောင်းပေးမည့် အပိုင်း ★
     const pageTitle = document.getElementById('pageTitle') || document.querySelector('.header-title') || document.querySelector('h2');
     if (pageTitle) {
         if (selectedModel) {
@@ -232,38 +219,36 @@ function renderContent() {
         return;
     }
 
-   displayData.forEach(video => {
-    container.innerHTML += `
-        <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="box-sizing: border-box; width: 100%; border-radius: 8px; overflow: hidden; background: #1a1a1a; margin-bottom: 12px;">
-            <!-- Thumbnail & Video Box -->
-            <div class="thumbnail-box" style="position: relative; width: 100%; aspect-ratio: 16/9; background: #000; display: flex; align-items: center; justify-content: center; overflow: hidden;">
-                <video src="${video.thumbnail}" 
-                       autoplay 
-                       loop 
-                       muted 
-                       playsinline 
-                       style="width: 100%; height: 100%; object-fit: cover; display: block; margin: 0; padding: 0; pointer-events: none;">
-                </video>
-                <span class="view-badge" style="position: absolute; bottom: 8px; right: 8px; background: rgba(0,0,0,0.7); color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 12px; z-index: 2;">
-                    <i class="fa-solid fa-eye"></i> ${video.views || 0}
-                </span>
+    displayData.forEach(video => {
+        container.innerHTML += `
+            <div class="video-card" onclick="openPlayer('${video.stream_url}')">
+                <div class="thumbnail-box">
+                    <video src="${video.thumbnail}" 
+                           autoplay 
+                           loop 
+                           muted 
+                           playsinline 
+                           style="pointer-events: none;">
+                    </video>
+                    <span class="view-badge">
+                        <i class="fa-solid fa-eye"></i> ${video.views || 0}
+                    </span>
+                </div>
+                <div class="video-info" style="padding: 8px 10px;">
+                    <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3;">${video.title || ''}</h3>
+                </div>
             </div>
-            <!-- Title Box -->
-            <div class="video-info" style="padding: 8px 10px;">
-                <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3;">${video.title || ''}</h3>
-            </div>
-        </div>
-    `;
-});
+        `;
+    });
 
-// Autoplay ကို Force Run လုပ်ခြင်း
-document.querySelectorAll('.thumbnail-box video').forEach(v => {
-    v.muted = true;
-    v.play().catch(e => console.log(e));
-});
+    // Autoplay Force Run
+    document.querySelectorAll('.thumbnail-box video').forEach(v => {
+        v.muted = true;
+        v.play().catch(e => console.log(e));
+    });
+}
 
-
-// 6. Render Model List (Image Cards)
+// 6. Render Model List
 function renderModels() {
     const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!modelContainer) return;
@@ -280,7 +265,6 @@ function renderModels() {
     const modelMap = new Map();
 
     modelData.forEach(item => {
-        // Field Name မျိုးစုံကို စစ်ထုတ်ပေးထားပါသည်
         const name = item.model || item.Model || item.name || item.Title;
         const img = item.model_image || item['model_image'] || item.modelImage || item.image || item.thumbnail || item.Thumbnail;
 
@@ -296,7 +280,6 @@ function renderModels() {
     }
 
     uniqueModels.forEach(m => {
-        // ပုံ မရှိရင် သို့မဟုတ် Error တက်ရင် အစားထိုးပြမည့် ပုံ
         const displayImg = (m.image && m.image.trim() !== '') ? m.image : 'https://via.placeholder.com/150';
 
         modelContainer.innerHTML += `
