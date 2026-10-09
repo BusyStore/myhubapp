@@ -31,7 +31,7 @@ async function loadDataFromWorker() {
             const validData = data.filter(item => item && item.file_id && item.file_id !== "file_id");
 
             videoData = validData.map(item => {
-                let thumb = item.thumbnail || '';
+                let thumb = item.thumbnail || item.Thumbnail ||'';
                 if (thumb.includes('drive.google.com/file/d/')) {
                     const fileId = thumb.split('/file/d/')[1].split('/')[0];
                     thumb = `https://lh3.googleusercontent.com/d/${fileId}`;
