@@ -7,6 +7,21 @@ let videoData = [];
 let categoryData = [];
 let modelData = [];
 
+// Google Drive Link ကို Direct Link ပြောင်းပေးသည့် Function
+function getDirectDriveLink(url) {
+    if (!url) return '';
+    
+    // Google Drive Link ဖြစ်ပါက ID ကို ထုတ်ယူမည်
+    const match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (match && match[1]) {
+        const fileId = match[1];
+        // MP4 Video Stream အတွက် Direct Link ပုံစံ
+        return `https://lh3.googleusercontent.com/d/${fileId}`;
+    }
+    return url;
+}
+
+
 // 1. Fetch Data From Worker
 async function loadDataFromWorker() {
     const urlParams = new URLSearchParams(window.location.search);
@@ -221,7 +236,7 @@ function renderContent() {
         container.innerHTML += `
             <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
                 <div class="thumbnail-box" style="position:relative;">
-                    <video src="${video.thumbnail}" 
+                    <video src="${getDirectDriveLink(video.thumbnail)}" 
        autoplay 
        loop 
        muted 
