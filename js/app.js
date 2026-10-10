@@ -38,20 +38,15 @@ async function loadDataFromWorker() {
         if (Array.isArray(data)) {
             const validData = data.filter(item => item && typeof item === 'object');
 
-            videoData = validData.map(item => {
+            // ၁။ ဗီဒီယို ဒေတာများကို သီးသန့်သိမ်းဆည်းမည်
+            videoData = validData.filter(item => item.file_id && cleanText(item.file_id) !== '').map(item => {
                 let thumb = getDirectDriveLink(item.thumbnail);
-                let mImg = getDirectDriveLink(item.model_image || item.modelImage);
-                let cImg = getDirectDriveLink(item.category_image || item.categoryImage);
                 const rawIsVip = item.is_Vip !== undefined ? item.is_Vip : (item.is_vip !== undefined ? item.is_vip : item.isVip);
 
                 return {
                     title: cleanText(item.title),
-                    model: cleanText(item.model), // Video filtering အတွက် Column B
-                    model_name: cleanText(item.model_name), // Column H (ပြသရန် Model Name)
-                    model_image: mImg, // Column I (Model Image)
-                    category: cleanText(item.category), // Column C
-                    category_name: cleanText(item.category_name), // Column J
-                    category_image: cImg, // Column K
+                    model: cleanText(item.model),
+                    category: cleanText(item.category),
                     views: item.views || 0,
                     thumbnail: thumb || 'https://via.placeholder.com/300x180',
                     file_id: cleanText(item.file_id),
@@ -60,53 +55,43 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // 1. Models List (Model Page အတွက် model_name နဲ့ model_image ကို အဓိက စုဆောင်းမည်)
+            // ၂. Model Page အတွက် model_name နှင့် model_image ရှိသမျှ အားလုံးကို ဇာတ်ကားရှိသည်ဖြစ်စေ၊ မရှိသည်ဖြစ်စေ သီးသန့် အပြည့်အစုံ ဆွဲထုတ်မည် (ခွေး၊ ကြောင်၊ ကြွက် ဥပမာကဲ့သို့ Master List ပုံစံ)
             const customModelMap = new Map();
-            videoData.forEach(item => {
-                const mName = item.model_name; // Column H ကို သေချာစွာ အဓိကယူမည်
-                if (mName && mName !== '') {
-                    const cleanM = cleanText(mName);
-                    const key = cleanM.toLowerCase();
-                    
-                    // နှိပ်လိုက်ရင် Video တွေကို Filter လုပ်ဖို့ ရှေ့က မူလ model (Column B) ကို သုံးမည်၊ မရှိရင် model_name ကို သုံးမည်
-                    let linkTarget = item.model ? item.model : cleanM;
+            validData.forEach(item => {
+                const mName = cleanText(item.model_name);
+                const mImg = getDirectDriveLink(item.model_image || item.modelImage);
 
+                if (mName && mName !== '') {
+                    const key = mName.toLowerCase();
                     if (!customModelMap.has(key)) {
-                        customModelMap.set(key, { 
-                            name: cleanM, // ပြမည့်နာမည်က model_name ဖြစ်သည်
-                            linkName: cleanText(linkTarget), // လင့်ခ်ချိတ်ရန် 
-                            image: (item.model_image ? item.model_image : '') // model_image ကို ယူမည်
+                        customModelMap.set(key, {
+                            name: mName,
+                            linkName: mName,
+                            image: mImg || ''
                         });
-                    } else {
-                        let existing = customModelMap.get(key);
-                        if (!existing.image && item.model_image) {
-                            existing.image = item.model_image;
-                        }
+                    } else if (mImg && !customModelMap.get(key).image) {
+                        customModelMap.get(key).image = mImg;
                     }
                 }
             });
             modelData = Array.from(customModelMap.values());
 
-            // 2. Categories List
+            // ၃. Category Page အတွက် category_name နှင့် category_image အားလုံးကို သီးသန့်ဆွဲထုတ်မည်
             const customCategoryMap = new Map();
-            videoData.forEach(item => {
-                const cName = item.category_name; // Column J ကို အဓိကယူမည်
-                if (cName && cName !== '') {
-                    const cleanC = cleanText(cName);
-                    const key = cleanC.toLowerCase();
-                    let linkTarget = item.category ? item.category : cleanC;
+            validData.forEach(item => {
+                const cName = cleanText(item.category_name);
+                const cImg = getDirectDriveLink(item.category_image || item.categoryImage);
 
+                if (cName && cName !== '') {
+                    const key = cName.toLowerCase();
                     if (!customCategoryMap.has(key)) {
-                        customCategoryMap.set(key, { 
-                            name: cleanC, 
-                            linkName: cleanText(linkTarget), 
-                            image: (item.category_image ? item.category_image : '') 
+                        customCategoryMap.set(key, {
+                            name: cName,
+                            linkName: cName,
+                            image: cImg || ''
                         });
-                    } else {
-                        let existing = customCategoryMap.get(key);
-                        if (!existing.image && item.category_image) {
-                            existing.image = item.category_image;
-                        }
+                    } else if (cImg && !customCategoryMap.get(key).image) {
+                        customCategoryMap.get(key).image = cImg;
                     }
                 }
             });
@@ -117,14 +102,7 @@ async function loadDataFromWorker() {
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
             // --- Display Controller ---
-            if (selectedModel) {
-                if (modelContainer) modelContainer.style.display = 'none';
-                if (categoryContainer) categoryContainer.style.display = 'none';
-                if (videoContainer) {
-                    videoContainer.style.display = 'grid';
-                    renderContent();
-                }
-            } else if (selectedCategory) {
+            if (selectedModel || selectedCategory) {
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) categoryContainer.style.display = 'none';
                 if (videoContainer) {
@@ -218,23 +196,21 @@ function renderContent() {
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
 
-    let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
+    let displayData = videoData.filter(v => v.file_id && !v.isVip);
 
-    // Video Filter လုပ်ရာတွင် မူလ Column B (`model`) သို့မဟုတ် `model_name` ဖြင့် တိုက်စစ်မည်
+    // Model နှိပ်ထားပါက ဗီဒီယိုတန်းထဲက မူလ model ကော်လံ (Column B) နဲ့ တိုက်စစ်၍ Filter လုပ်မည်
     if (selectedModel) {
         displayData = displayData.filter(item => {
-            const targetModel = item.model ? item.model : item.model_name;
-            if (!targetModel) return false;
-            const models = targetModel.split(',').map(m => cleanText(m).toLowerCase());
+            if (!item.model) return false;
+            const models = item.model.split(',').map(m => cleanText(m).toLowerCase());
             return models.includes(cleanText(selectedModel).toLowerCase());
         });
     }
 
     if (selectedCategory) {
         displayData = displayData.filter(item => {
-            const targetCat = item.category ? item.category : item.category_name;
-            if (!targetCat) return false;
-            const cats = targetCat.split(',').map(c => cleanText(c).toLowerCase());
+            if (!item.category) return false;
+            const cats = item.category.split(',').map(c => cleanText(c).toLowerCase());
             return cats.includes(cleanText(selectedCategory).toLowerCase());
         });
     }
@@ -314,4 +290,3 @@ function renderCategories() {
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
-        
