@@ -38,15 +38,15 @@ async function loadDataFromWorker() {
         if (Array.isArray(data)) {
             const validData = data.filter(item => item && typeof item === 'object');
 
-            // ၁။ ဗီဒီယို ဒေတာများကို သီးသန့်သိမ်းဆည်းမည်
+            // ၁။ ဗီဒီယို ဒေတာများကို သီးသန့်သိမ်းဆည်းမည် (Filter လုပ်ရန်အတွက် မူလ model/category ကိုပါ ထည့်မည်)
             videoData = validData.filter(item => item.file_id && cleanText(item.file_id) !== '').map(item => {
                 let thumb = getDirectDriveLink(item.thumbnail);
                 const rawIsVip = item.is_Vip !== undefined ? item.is_Vip : (item.is_vip !== undefined ? item.is_vip : item.isVip);
 
                 return {
                     title: cleanText(item.title),
-                    model: cleanText(item.model),
-                    category: cleanText(item.category),
+                    model: cleanText(item.model), // Filter လုပ်ရန် (Column B)
+                    category: cleanText(item.category), // Filter လုပ်ရန် (Column C)
                     views: item.views || 0,
                     thumbnail: thumb || 'https://via.placeholder.com/300x180',
                     file_id: cleanText(item.file_id),
@@ -55,9 +55,10 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // ၂. Model Page အတွက် model_name နှင့် model_image ရှိသမျှ အားလုံးကို ဇာတ်ကားရှိသည်ဖြစ်စေ၊ မရှိသည်ဖြစ်စေ သီးသန့် အပြည့်အစုံ ဆွဲထုတ်မည် (ခွေး၊ ကြောင်၊ ကြွက် ဥပမာကဲ့သို့ Master List ပုံစံ)
+            // ၂။ Model Page အတွက် - Sheet ထဲက model_name (Column H) နှင့် model_image (Column I) ရှိသမျှ အားလုံးကို ဇာတ်ကားရှိသည်ဖြစ်စေ၊ မရှိသည်ဖြစ်စေ အကုန်ဆွဲထုတ်မည်
             const customModelMap = new Map();
             validData.forEach(item => {
+                // ⚠️ အဓိကချက်: ရိုးရိုး model (Column B) ကို လုံးဝမသုံးဘဲ model_name (Column H) ကိုသာ အဓိက သုံးမည်
                 const mName = cleanText(item.model_name);
                 const mImg = getDirectDriveLink(item.model_image || item.modelImage);
 
@@ -65,9 +66,9 @@ async function loadDataFromWorker() {
                     const key = mName.toLowerCase();
                     if (!customModelMap.has(key)) {
                         customModelMap.set(key, {
-                            name: mName,
-                            linkName: mName,
-                            image: mImg || ''
+                            name: mName,       // ပေါ်မယ့်နာမည် (model_name)
+                            linkName: mName,   // နှိပ်ရင် လင့်ခ်မှာပါမယ့်နာမည်
+                            image: mImg || ''  // ပုံ (model_image)
                         });
                     } else if (mImg && !customModelMap.get(key).image) {
                         customModelMap.get(key).image = mImg;
@@ -76,7 +77,7 @@ async function loadDataFromWorker() {
             });
             modelData = Array.from(customModelMap.values());
 
-            // ၃. Category Page အတွက် category_name နှင့် category_image အားလုံးကို သီးသန့်ဆွဲထုတ်မည်
+            // ၃။ Category Page အတွက် - category_name (Column J) နဲ့ category_image (Column K) အားလုံးကို ဆွဲထုတ်မည်
             const customCategoryMap = new Map();
             validData.forEach(item => {
                 const cName = cleanText(item.category_name);
@@ -101,7 +102,7 @@ async function loadDataFromWorker() {
             const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
-            // --- Display Controller ---
+            // --- Display Controller (စာမျက်နှာအလိုက် ပေါ်ရမည့်ဟာကို တိကျစွာ ထိန်းချုပ်ခြင်း) ---
             if (selectedModel || selectedCategory) {
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) categoryContainer.style.display = 'none';
@@ -196,9 +197,9 @@ function renderContent() {
     const selectedModel = urlParams.get('model');
     const selectedCategory = urlParams.get('category');
 
-    let displayData = videoData.filter(v => v.file_id && !v.isVip);
+    let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
 
-    // Model နှိပ်ထားပါက ဗီဒီယိုတန်းထဲက မူလ model ကော်လံ (Column B) နဲ့ တိုက်စစ်၍ Filter လုပ်မည်
+    // နှိပ်ထားသော Model ဖြင့် ဗီဒီယိုများကို စစ်ထုတ်ခြင်း (Column B ကို သုံးမည်)
     if (selectedModel) {
         displayData = displayData.filter(item => {
             if (!item.model) return false;
