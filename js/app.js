@@ -301,7 +301,7 @@ function renderContent() {
     }
 
     if (displayData.length === 0) {
-        container.innerHTML = '<p style="color:#888; text-align:center; padding:60px 20px; width:100%; display:flex; justify-content:center; align-items:center; grid-column: 1 / -1;">ဗီဒီယိုများ မရှိသေးပါခင်ဗျာ။</p>';
+        container.innerHTML = '<p style="color:#888; text-align:center; padding:60px 20px; width:100%; display:flex; justify-content:center; align-items:center; grid-column: 1 / -1;">No Videos for this Category</p>';
         return;
     }
 
