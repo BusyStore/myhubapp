@@ -15,7 +15,6 @@ function getDirectDriveLink(url) {
     return url;
 }
 
-// စာသားထဲက Newline နဲ့ invisible space များကို ဖယ်ရှားပေးသော function
 function cleanText(text) {
     if (!text) return '';
     return String(text).replace(/[\r\n]+/g, '').trim();
@@ -47,11 +46,11 @@ async function loadDataFromWorker() {
 
                 return {
                     title: cleanText(item.title),
-                    model: cleanText(item.model),
-                    model_name: cleanText(item.model_name || item.model),
+                    model: cleanText(item.model), // Video filtering အတွက် Column B ကို သုံးမည်
+                    model_name: cleanText(item.model_name),
                     model_image: mImg,
-                    category: cleanText(item.category),
-                    category_name: cleanText(item.category_name || item.category),
+                    category: cleanText(item.category), // Video filtering အတွက် Column C ကို သုံးမည်
+                    category_name: cleanText(item.category_name),
                     category_image: cImg,
                     views: item.views || 0,
                     thumbnail: thumb || 'https://via.placeholder.com/300x180',
@@ -61,34 +60,42 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // Models Mapping (, ဖြင့် ခွဲထုတ်ယူခြင်း)
+            // 1. Models List (Model Page အတွက် `model_name` နဲ့ `model_image` ကို သီးသန့်စုမည်)
             const customModelMap = new Map();
             videoData.forEach(item => {
-                const mName = item.model_name || item.model;
+                const mName = item.model_name;
                 if (mName) {
-                    mName.split(',').forEach(m => {
-                        const cleanM = cleanText(m);
-                        if (cleanM && !customModelMap.has(cleanM.toLowerCase())) {
-                            const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : item.thumbnail;
-                            customModelMap.set(cleanM.toLowerCase(), { name: cleanM, image: img });
+                    const cleanM = cleanText(mName);
+                    const key = cleanM.toLowerCase();
+                    if (cleanM && !customModelMap.has(key)) {
+                        const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : '';
+                        customModelMap.set(key, { name: cleanM, image: img });
+                    } else if (customModelMap.has(key)) {
+                        let existing = customModelMap.get(key);
+                        if (!existing.image && item.model_image) {
+                            existing.image = item.model_image;
                         }
-                    });
+                    }
                 }
             });
             modelData = Array.from(customModelMap.values());
 
-            // Categories Mapping (, ဖြင့် ခွဲထုတ်ယူခြင်း)
+            // 2. Categories List (Category Page အတွက် `category_name` နဲ့ `category_image` ကို သီးသန့်စုမည်)
             const customCategoryMap = new Map();
             videoData.forEach(item => {
-                const cName = item.category_name || item.category;
+                const cName = item.category_name;
                 if (cName) {
-                    cName.split(',').forEach(c => {
-                        const cleanC = cleanText(c);
-                        if (cleanC && !customCategoryMap.has(cleanC.toLowerCase())) {
-                            const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : item.thumbnail;
-                            customCategoryMap.set(cleanC.toLowerCase(), { name: cleanC, image: img });
+                    const cleanC = cleanText(cName);
+                    const key = cleanC.toLowerCase();
+                    if (cleanC && !customCategoryMap.has(key)) {
+                        const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : '';
+                        customCategoryMap.set(key, { name: cleanC, image: img });
+                    } else if (customCategoryMap.has(key)) {
+                        let existing = customCategoryMap.get(key);
+                        if (!existing.image && item.category_image) {
+                            existing.image = item.category_image;
                         }
-                    });
+                    }
                 }
             });
             categoryData = Array.from(customCategoryMap.values());
@@ -185,20 +192,19 @@ function renderContent() {
 
     let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
 
+    // Video Filter လုပ်ရာတွင် Column B (`model`) နဲ့ Column C (`category`) ကိုသာ အဓိက သုံးမည်
     if (selectedModel) {
         displayData = displayData.filter(item => {
-            const mTarget = item.model_name || item.model;
-            if (!mTarget) return false;
-            const models = mTarget.split(',').map(m => cleanText(m).toLowerCase());
+            if (!item.model) return false;
+            const models = item.model.split(',').map(m => cleanText(m).toLowerCase());
             return models.includes(cleanText(selectedModel).toLowerCase());
         });
     }
 
     if (selectedCategory) {
         displayData = displayData.filter(item => {
-            const cTarget = item.category_name || item.category;
-            if (!cTarget) return false;
-            const cats = cTarget.split(',').map(c => cleanText(c).toLowerCase());
+            if (!item.category) return false;
+            const cats = item.category.split(',').map(c => cleanText(c).toLowerCase());
             return cats.includes(cleanText(selectedCategory).toLowerCase());
         });
     }
