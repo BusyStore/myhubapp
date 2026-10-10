@@ -278,7 +278,7 @@ function renderCategories() {
     categoryData.forEach(cat => {
         const displayImg = (cat.image && cat.image.trim() !== '') ? cat.image : 'https://via.placeholder.com/150';
         categoryContainer.innerHTML += `
-            <a href="index.html?category=${encodeURIComponent(cat.linkName)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+            <a href="category.html?category=${encodeURIComponent(cat.linkName)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
                 <div style="width:100%; height:135px; overflow:hidden; background:#000;">
                     <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
                 </div>
