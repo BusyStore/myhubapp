@@ -46,9 +46,9 @@ async function loadDataFromWorker() {
 
                 return {
                     title: cleanText(item.title),
-                    model: cleanText(item.model), // Video filtering အတွက် Column B (ရှေ့ကရိုးရိုး model)
-                    model_name: cleanText(item.model_name), // Column H (ပြသရန် model_name)
-                    model_image: mImg, // Column I
+                    model: cleanText(item.model), // Video filtering အတွက် Column B
+                    model_name: cleanText(item.model_name), // Column H (ပြသရန် Model Name)
+                    model_image: mImg, // Column I (Model Image)
                     category: cleanText(item.category), // Column C
                     category_name: cleanText(item.category_name), // Column J
                     category_image: cImg, // Column K
@@ -60,19 +60,23 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // 1. Models List (model_name များကို အကုန်စုမည်၊ နှိပ်သည့်အခါ ရှေ့ကရိုးရိုး model/model_name ဆီသို့ လင့်ခ်ချိတ်မည်)
+            // 1. Models List (Model Page အတွက် model_name နဲ့ model_image ကို အဓိက စုဆောင်းမည်)
             const customModelMap = new Map();
             videoData.forEach(item => {
-                const mName = item.model_name;
-                // ဗီဒီယိုတန်းထဲက model (Column B) ကိုပါ ထည့်သွင်းစဉ်းစားပေးသည် (မရှိပါက model_name ကို ယူမည်)
-                const linkTarget = item.model ? item.model : item.model_name; 
-
+                const mName = item.model_name; // Column H ကို သေချာစွာ အဓိကယူမည်
                 if (mName && mName !== '') {
                     const cleanM = cleanText(mName);
                     const key = cleanM.toLowerCase();
+                    
+                    // နှိပ်လိုက်ရင် Video တွေကို Filter လုပ်ဖို့ ရှေ့က မူလ model (Column B) ကို သုံးမည်၊ မရှိရင် model_name ကို သုံးမည်
+                    let linkTarget = item.model ? item.model : cleanM;
+
                     if (!customModelMap.has(key)) {
-                        const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : '';
-                        customModelMap.set(key, { name: cleanM, linkName: cleanText(linkTarget), image: img });
+                        customModelMap.set(key, { 
+                            name: cleanM, // ပြမည့်နာမည်က model_name ဖြစ်သည်
+                            linkName: cleanText(linkTarget), // လင့်ခ်ချိတ်ရန် 
+                            image: (item.model_image ? item.model_image : '') // model_image ကို ယူမည်
+                        });
                     } else {
                         let existing = customModelMap.get(key);
                         if (!existing.image && item.model_image) {
@@ -86,15 +90,18 @@ async function loadDataFromWorker() {
             // 2. Categories List
             const customCategoryMap = new Map();
             videoData.forEach(item => {
-                const cName = item.category_name;
-                const linkTarget = item.category ? item.category : item.category_name;
-
+                const cName = item.category_name; // Column J ကို အဓိကယူမည်
                 if (cName && cName !== '') {
                     const cleanC = cleanText(cName);
                     const key = cleanC.toLowerCase();
+                    let linkTarget = item.category ? item.category : cleanC;
+
                     if (!customCategoryMap.has(key)) {
-                        const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : '';
-                        customCategoryMap.set(key, { name: cleanC, linkName: cleanText(linkTarget), image: img });
+                        customCategoryMap.set(key, { 
+                            name: cleanC, 
+                            linkName: cleanText(linkTarget), 
+                            image: (item.category_image ? item.category_image : '') 
+                        });
                     } else {
                         let existing = customCategoryMap.get(key);
                         if (!existing.image && item.category_image) {
@@ -213,7 +220,7 @@ function renderContent() {
 
     let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
 
-    // Video Filter လုပ်ရာတွင် Column B (`model`) သို့မဟုတ် `model_name` ကို စစ်ဆေးမည်
+    // Video Filter လုပ်ရာတွင် မူလ Column B (`model`) သို့မဟုတ် `model_name` ဖြင့် တိုက်စစ်မည်
     if (selectedModel) {
         displayData = displayData.filter(item => {
             const targetModel = item.model ? item.model : item.model_name;
@@ -307,4 +314,3 @@ function renderCategories() {
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
-            
