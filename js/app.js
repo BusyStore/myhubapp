@@ -46,12 +46,12 @@ async function loadDataFromWorker() {
 
                 return {
                     title: cleanText(item.title),
-                    model: cleanText(item.model), // Video filtering အတွက် Column B ကို သုံးမည်
-                    model_name: cleanText(item.model_name),
-                    model_image: mImg,
-                    category: cleanText(item.category), // Video filtering အတွက် Column C ကို သုံးမည်
-                    category_name: cleanText(item.category_name),
-                    category_image: cImg,
+                    model: cleanText(item.model), // Video filtering အတွက် Column B
+                    model_name: cleanText(item.model_name), // Model page အတွက် Column H
+                    model_image: mImg, // Column I
+                    category: cleanText(item.category), // Video filtering အတွက် Column C
+                    category_name: cleanText(item.category_name), // Category page အတွက် Column J
+                    category_image: cImg, // Column K
                     views: item.views || 0,
                     thumbnail: thumb || 'https://via.placeholder.com/300x180',
                     file_id: cleanText(item.file_id),
@@ -60,41 +60,31 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // 1. Models List (Model Page အတွက် `model_name` နဲ့ `model_image` ကို သီးသန့်စုမည်)
+            // 1. Models List (model_name နှင့် model_image များကိုသာ Column H & I မှ သီးသန့်စုမည်)
             const customModelMap = new Map();
             videoData.forEach(item => {
-                const mName = item.model_name;
+                const mName = item.model_name; // Column H ကိုသာ ယူမည်
                 if (mName) {
                     const cleanM = cleanText(mName);
                     const key = cleanM.toLowerCase();
                     if (cleanM && !customModelMap.has(key)) {
-                        const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : '';
+                        const img = (item.model_image && item.model_image.trim() !== '') ? item.model_image : (item.thumbnail || '');
                         customModelMap.set(key, { name: cleanM, image: img });
-                    } else if (customModelMap.has(key)) {
-                        let existing = customModelMap.get(key);
-                        if (!existing.image && item.model_image) {
-                            existing.image = item.model_image;
-                        }
                     }
                 }
             });
             modelData = Array.from(customModelMap.values());
 
-            // 2. Categories List (Category Page အတွက် `category_name` နဲ့ `category_image` ကို သီးသန့်စုမည်)
+            // 2. Categories List (category_name နှင့် category_image များကိုသာ Column J & K မှ သီးသန့်စုမည်)
             const customCategoryMap = new Map();
             videoData.forEach(item => {
-                const cName = item.category_name;
+                const cName = item.category_name; // Column J ကိုသာ ယူမည်
                 if (cName) {
                     const cleanC = cleanText(cName);
                     const key = cleanC.toLowerCase();
                     if (cleanC && !customCategoryMap.has(key)) {
-                        const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : '';
+                        const img = (item.category_image && item.category_image.trim() !== '') ? item.category_image : (item.thumbnail || '');
                         customCategoryMap.set(key, { name: cleanC, image: img });
-                    } else if (customCategoryMap.has(key)) {
-                        let existing = customCategoryMap.get(key);
-                        if (!existing.image && item.category_image) {
-                            existing.image = item.category_image;
-                        }
                     }
                 }
             });
@@ -104,6 +94,7 @@ async function loadDataFromWorker() {
             const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
+            // URL တွင် model သို့မဟုတ် category ပါဝင်မှသာ Video များကို ပြသမည်၊ မပါလျှင် သက်ဆိုင်ရာ Container ကိုသာ ပြမည်
             if (selectedModel || selectedCategory) {
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) categoryContainer.style.display = 'none';
@@ -112,10 +103,8 @@ async function loadDataFromWorker() {
                     renderContent();
                 }
             } else {
-                if (videoContainer) {
-                    videoContainer.style.display = 'grid';
-                    renderContent();
-                }
+                if (videoContainer) videoContainer.style.display = 'none'; // ပင်မစာမျက်နှာ သို့မဟုတ် အခြားစာမျက်နှာများအလိုက် ထိန်းချုပ်ရန်
+
                 if (modelContainer) {
                     modelContainer.style.display = 'grid';
                     renderModels();
@@ -123,6 +112,11 @@ async function loadDataFromWorker() {
                 if (categoryContainer) {
                     categoryContainer.style.display = 'grid';
                     renderCategories();
+                }
+                // အကယ်၍ Model/Category Container မရှိဘဲ Video Container သီးသန့်ရှိသည့် စာမျက်နှာဖြစ်ပါက Video ပြမည်
+                if (!modelContainer && !categoryContainer && videoContainer) {
+                    videoContainer.style.display = 'grid';
+                    renderContent();
                 }
             }
         }
@@ -192,7 +186,7 @@ function renderContent() {
 
     let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
 
-    // Video Filter လုပ်ရာတွင် Column B (`model`) နဲ့ Column C (`category`) ကိုသာ အဓိက သုံးမည်
+    // Video Filter လုပ်ရာတွင် မူလ Column B (`model`) နဲ့ Column C (`category`) ကိုသာ သုံးမည်
     if (selectedModel) {
         displayData = displayData.filter(item => {
             if (!item.model) return false;
