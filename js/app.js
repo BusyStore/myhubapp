@@ -336,3 +336,4 @@ function renderContent() {
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
+                                                          
