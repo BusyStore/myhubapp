@@ -2,6 +2,8 @@ const WORKER_API_URL = "https://myhubapp.dathalay1.workers.dev/api/catalog";
 const STREAM_BASE_URL = "https://myhubapp.dathalay1.workers.dev/stream?file_id=";
 
 let videoData = [];
+let modelData = [];
+let categoryData = [];
 
 function getDirectDriveLink(url) {
     if (!url) return '';
@@ -38,7 +40,7 @@ async function loadDataFromWorker() {
         if (Array.isArray(data)) {
             const validData = data.filter(item => item && typeof item === 'object');
 
-            // ဗီဒီယို ဒေတာများ သိမ်းဆည်းခြင်း
+            // ၁။ ဗီဒီယို ဒေတာများ သိမ်းဆည်းခြင်း
             videoData = validData.filter(item => item.file_id && cleanText(item.file_id) !== '').map(item => {
                 let thumb = getDirectDriveLink(item.thumbnail);
                 const rawIsVip = item.is_Vip !== undefined ? item.is_Vip : (item.is_vip !== undefined ? item.is_vip : item.isVip);
@@ -57,6 +59,62 @@ async function loadDataFromWorker() {
                 };
             });
 
+            // ၂။ Model ဒေတာများ သီးသန့် စုဆောင်းခြင်း (Comma ပါလျှင် ခွဲထုတ်၍ ပေါင်းရန်)
+            const modelMap = new Map();
+            validData.forEach(item => {
+                if (item && item.model_name) {
+                    let rawModels = cleanText(item.model_name);
+                    let image = getDirectDriveLink(item.model_image);
+                    let hasVideo = item.file_id && cleanText(item.file_id) !== '';
+
+                    // ကော်မာ (,) ပါပါက ခွဲထုတ်မည်
+                    let models = rawModels.split(',').map(m => cleanText(m)).filter(m => m !== '');
+
+                    models.forEach(name => {
+                        let lowerName = name.toLowerCase();
+                        if (!modelMap.has(lowerName)) {
+                            modelMap.set(lowerName, {
+                                name: name,
+                                image: image !== '' ? image : 'https://via.placeholder.com/150',
+                                count: 0
+                            });
+                        }
+                        if (hasVideo) {
+                            modelMap.get(lowerName).count++;
+                        }
+                    });
+                }
+            });
+            modelData = Array.from(modelMap.values());
+
+            // ၃။ Category ဒေတာများ သီးသန့် စုဆောင်းခြင်း (Comma ပါလျှင် ခွဲထုတ်၍ ပေါင်းရန်)
+            const catMap = new Map();
+            validData.forEach(item => {
+                if (item && item.category_name) {
+                    let rawCats = cleanText(item.category_name);
+                    let image = getDirectDriveLink(item.category_image);
+                    let hasVideo = item.file_id && cleanText(item.file_id) !== '';
+
+                    // ကော်မာ (,) ပါပါက ခွဲထုတ်မည်
+                    let cats = rawCats.split(',').map(c => cleanText(c)).filter(c => c !== '');
+
+                    cats.forEach(name => {
+                        let lowerName = name.toLowerCase();
+                        if (!catMap.has(lowerName)) {
+                            catMap.set(lowerName, {
+                                name: name,
+                                image: image !== '' ? image : 'https://via.placeholder.com/150',
+                                count: 0
+                            });
+                        }
+                        if (hasVideo) {
+                            catMap.get(lowerName).count++;
+                        }
+                    });
+                }
+            });
+            categoryData = Array.from(catMap.values());
+
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
@@ -74,14 +132,14 @@ async function loadDataFromWorker() {
                 if (categoryContainer) categoryContainer.style.display = 'none';
                 if (modelContainer) {
                     modelContainer.style.display = 'grid';
-                    renderModelsDirect(validData);
+                    renderModelsDirect();
                 }
             } else if (window.location.pathname.includes('category.html')) {
                 if (videoContainer) videoContainer.style.display = 'none';
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) {
                     categoryContainer.style.display = 'grid';
-                    renderCategoriesDirect(validData);
+                    renderCategoriesDirect();
                 }
             } else {
                 if (modelContainer) modelContainer.style.display = 'none';
@@ -97,41 +155,25 @@ async function loadDataFromWorker() {
     }
 }
 
-// Model များကို Duplicate လုံးဝမရှိစေဘဲ စနစ်တကျ ပြသရန်
-function renderModelsDirect(data) {
+// modelData ကို သုံး၍ Model များကို ပြသရန်
+function renderModelsDirect() {
     const container = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!container) return;
 
     container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 10px;";
     container.innerHTML = '';
 
-    const seenModels = new Set();
-    let validModels = [];
-
-    data.forEach(item => {
-        if (item && item.model_name) {
-            let name = cleanText(item.model_name);
-            let image = getDirectDriveLink(item.model_image);
-            let lowerName = name.toLowerCase();
-
-            if (name !== '' && !seenModels.has(lowerName)) {
-                seenModels.add(lowerName);
-                validModels.push({ name: name, image: image });
-            }
-        }
-    });
-
-    if (validModels.length === 0) {
+    if (modelData.length === 0) {
         container.innerHTML = '<p style="color:#888; text-align:center; padding:40px; width:100%; grid-column: 1 / -1;">Model မရှိသေးပါ။</p>';
         return;
     }
 
-    validModels.forEach(model => {
-        const displayImg = model.image !== '' ? model.image : 'https://via.placeholder.com/150';
+    modelData.forEach(model => {
         container.innerHTML += `
             <a href="model.html?model=${encodeURIComponent(model.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
-                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
-                    <img src="${displayImg}" alt="${model.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000; position:relative;">
+                    <img src="${model.image}" alt="${model.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                    <span style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:#fff; font-size:10px; padding:2px 5px; border-radius:4px;">${model.count} vids</span>
                 </div>
                 <div style="padding:6px 4px;">
                     <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${model.name}</span>
@@ -141,41 +183,25 @@ function renderModelsDirect(data) {
     });
 }
 
-// Category များကို Duplicate လုံးဝမရှိစေဘဲ စနစ်တကျ ပြသရန်
-function renderCategoriesDirect(data) {
+// categoryData ကို သုံး၍ Category များကို ပြသရန်
+function renderCategoriesDirect() {
     const container = document.getElementById('categoryContainer') || document.getElementById('category-container');
     if (!container) return;
 
     container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
     container.innerHTML = '';
 
-    const seenCats = new Set();
-    let validCats = [];
-
-    data.forEach(item => {
-        if (item && item.category_name) {
-            let name = cleanText(item.category_name);
-            let image = getDirectDriveLink(item.category_image);
-            let lowerName = name.toLowerCase();
-
-            if (name !== '' && !seenCats.has(lowerName)) {
-                seenCats.add(lowerName);
-                validCats.push({ name: name, image: image });
-            }
-        }
-    });
-
-    if (validCats.length === 0) {
+    if (categoryData.length === 0) {
         container.innerHTML = '<p style="color:#888; text-align:center; padding:40px; width:100%; grid-column: 1 / -1;">Category မရှိသေးပါ။</p>';
         return;
     }
 
-    validCats.forEach(cat => {
-        const displayImg = cat.image !== '' ? cat.image : 'https://via.placeholder.com/150';
+    categoryData.forEach(cat => {
         container.innerHTML += `
             <a href="index.html?category=${encodeURIComponent(cat.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
-                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
-                    <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                <div style="width:100%; height:135px; overflow:hidden; background:#000; position:relative;">
+                    <img src="${cat.image}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                    <span style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:#fff; font-size:10px; padding:2px 5px; border-radius:4px;">${cat.count} vids</span>
                 </div>
                 <div style="padding:8px 4px;">
                     <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat.name}</span>
@@ -241,6 +267,7 @@ function closePlayer() {
     }
 }
 
+// videoData ကို သုံး၍ ဗီဒီယိုများကို စစ်ထုတ်ပြသရန် (Comma ပါသော Category/Model များကိုပါ မှန်ကန်စွာ စစ်ထုတ်ပေးမည်)
 function renderContent() {
     const container = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
     if (!container) return;
