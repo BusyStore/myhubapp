@@ -59,63 +59,50 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // ၂။ Model ဒေတာများနှင့် ပုံ/Count များကို စုဆောင်းခြင်း
+            // ၂။ Model ဒေတာများ စုဆောင်းခြင်း
             const modelMap = new Map();
             validData.forEach(item => {
-                if (item && (item.model_name || item.model)) {
-                    let rawModels = cleanText(item.model_name || item.model);
-                    let img = getDirectDriveLink(item.model_image || item.modelImage);
-                    let hasVideo = item.file_id && cleanText(item.file_id) !== '';
+                let rawModels = cleanText(item.model_name || item.model);
+                let img = getDirectDriveLink(item.model_image || item.modelImage);
+                let hasVideo = item.file_id && cleanText(item.file_id) !== '';
+                if (rawModels !== '') {
                     let models = rawModels.split(',').map(m => cleanText(m)).filter(m => m !== '');
-
                     models.forEach(name => {
                         let lowerName = name.toLowerCase();
                         if (!modelMap.has(lowerName)) {
-                            modelMap.set(lowerName, {
-                                name: name,
-                                image: img,
-                                count: 0
-                            });
-                        } else {
-                            if (img && !modelMap.get(lowerName).image) {
-                                modelMap.get(lowerName).image = img;
-                            }
+                            modelMap.set(lowerName, { name: name, image: img, count: 0 });
+                        } else if (img && !modelMap.get(lowerName).image) {
+                            modelMap.get(lowerName).image = img;
                         }
-                        if (hasVideo) {
-                            modelMap.get(lowerName).count++;
-                        }
+                        if (hasVideo) modelMap.get(lowerName).count++;
                     });
                 }
             });
             modelData = Array.from(modelMap.values());
 
-            // ၃။ Category Master List ကို category_name မှ ဆွဲမည်၊ Count ကိုမူ item.category (ကော်မာပါသော) မှ တိကျစွာ ရေမည်
+            // ၃။ Category များကို category_name မှ ယူမည်၊ Count ကိုမူ item.category ထဲပါသော စာသားများဖြင့် တွက်မည်
             const catMap = new Map();
 
-            // ပထမအဆင့် - category_name (သို့မဟုတ် category) မှ Master List နာမည်များနှင့် ပုံများကို အရင်စုမည်
+            // ပထမအဆင့် - category_name ကော်လံမှ နာမည်များနှင့် ပုံများကို အဓိကယူမည်
             validData.forEach(item => {
-                let catField = cleanText(item.category_name || item.category);
+                let catNameField = cleanText(item.category_name);
                 let img = getDirectDriveLink(item.category_image || item.categoryImage);
-                if (catField !== '') {
-                    let cats = catField.split(',').map(c => cleanText(c)).filter(c => c !== '');
+
+                if (catNameField !== '') {
+                    // category_name မှာ တစ်ကွက်ချင်းစီ သို့မဟုတ် ကော်မာခံနိုင်လျှင် ခွဲမည်
+                    let cats = catNameField.split(',').map(c => cleanText(c)).filter(c => c !== '');
                     cats.forEach(name => {
                         let lowerName = name.toLowerCase();
                         if (!catMap.has(lowerName)) {
-                            catMap.set(lowerName, {
-                                name: name,
-                                image: img,
-                                count: 0
-                            });
-                        } else {
-                            if (img && !catMap.get(lowerName).image) {
-                                catMap.get(lowerName).image = img;
-                            }
+                            catMap.set(lowerName, { name: name, image: img, count: 0 });
+                        } else if (img && !catMap.get(lowerName).image) {
+                            catMap.get(lowerName).image = img;
                         }
                     });
                 }
             });
 
-            // ဒုတိယအဆင့် - ဗီဒီယို တစ်ပုဒ်ချင်းစီ၏ item.category ထဲပါသော နာမည်များကို စစ်ပြီး Count ကို တိကျစွာ ပေါင်းထည့်မည်
+            // ဒုတိယအဆင့် - ဗီဒီယို တစ်ပုဒ်ချင်းစီ၏ item.category ကော်လံ (ကော်မာပါသော) ထဲမှ စစ်ပြီး Count ကို တိကျစွာ ပေါင်းထည့်မည်
             videoData.forEach(video => {
                 if (video.category) {
                     let videoCats = video.category.split(',').map(c => cleanText(c).toLowerCase()).filter(c => c !== '');
@@ -198,7 +185,7 @@ function renderModelsDirect() {
     });
 }
 
-// Category များကို ပြသရန်
+// Category များကို ပြသရန် (vids count ဖြုတ်ချင်ရင် အောက်က ${cat.count} vids နေရာကို ဖြုတ်လို့ရပါတယ်)
 function renderCategoriesDirect() {
     const container = document.getElementById('categoryContainer') || document.getElementById('category-container');
     if (!container) return;
@@ -336,4 +323,3 @@ function renderContent() {
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
-                                                          
