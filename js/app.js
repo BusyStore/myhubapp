@@ -3,16 +3,17 @@ const WORKER_API_URL = "https://myhubapp.dathalay1.workers.dev/api/catalog";
 const STREAM_BASE_URL = "https://myhubapp.dathalay1.workers.dev/stream?file_id=";
 
 let videoData = [];
-let modelData = [];
-let categoryData = [];
 
 function getDirectDriveLink(url) {
     if (!url) return '';
-    const match = String(url).match(/\/d\/([a-zA-Z0-9_-]+)/);
-    if (match && match[1]) {
-        return `https://lh3.googleusercontent.com/d/${match[1]}`;
+    const strUrl = String(url).trim();
+    if (strUrl.includes('drive.google.com') || strUrl.includes('docs.google.com')) {
+        const match = strUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+        if (match && match[1]) {
+            return `https://lh3.googleusercontent.com/d/${match[1]}`;
+        }
     }
-    return url;
+    return strUrl;
 }
 
 function cleanText(text) {
@@ -38,15 +39,15 @@ async function loadDataFromWorker() {
         if (Array.isArray(data)) {
             const validData = data.filter(item => item && typeof item === 'object');
 
-            // ၁။ ဗီဒီယို ဒေတာများကို သီးသန့်သိမ်းဆည်းမည် (Filter လုပ်ရန်အတွက် မူလ model/category ကိုပါ ထည့်မည်)
+            // ဗီဒီယို ဒေတာများ သိမ်းဆည်းမည်
             videoData = validData.filter(item => item.file_id && cleanText(item.file_id) !== '').map(item => {
                 let thumb = getDirectDriveLink(item.thumbnail);
                 const rawIsVip = item.is_Vip !== undefined ? item.is_Vip : (item.is_vip !== undefined ? item.is_vip : item.isVip);
 
                 return {
                     title: cleanText(item.title),
-                    model: cleanText(item.model), // Filter လုပ်ရန် (Column B)
-                    category: cleanText(item.category), // Filter လုပ်ရန် (Column C)
+                    model: cleanText(item.model),
+                    category: cleanText(item.category),
                     views: item.views || 0,
                     thumbnail: thumb || 'https://via.placeholder.com/300x180',
                     file_id: cleanText(item.file_id),
@@ -55,54 +56,11 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // ၂။ Model Page အတွက် - Sheet ထဲက model_name (Column H) နှင့် model_image (Column I) ရှိသမျှ အားလုံးကို ဇာတ်ကားရှိသည်ဖြစ်စေ၊ မရှိသည်ဖြစ်စေ အကုန်ဆွဲထုတ်မည်
-            const customModelMap = new Map();
-            validData.forEach(item => {
-                // ⚠️ အဓိကချက်: ရိုးရိုး model (Column B) ကို လုံးဝမသုံးဘဲ model_name (Column H) ကိုသာ အဓိက သုံးမည်
-                const mName = cleanText(item.model_name);
-                const mImg = getDirectDriveLink(item.model_image || item.modelImage);
-
-                if (mName && mName !== '') {
-                    const key = mName.toLowerCase();
-                    if (!customModelMap.has(key)) {
-                        customModelMap.set(key, {
-                            name: mName,       // ပေါ်မယ့်နာမည် (model_name)
-                            linkName: mName,   // နှိပ်ရင် လင့်ခ်မှာပါမယ့်နာမည်
-                            image: mImg || ''  // ပုံ (model_image)
-                        });
-                    } else if (mImg && !customModelMap.get(key).image) {
-                        customModelMap.get(key).image = mImg;
-                    }
-                }
-            });
-            modelData = Array.from(customModelMap.values());
-
-            // ၃။ Category Page အတွက် - category_name (Column J) နဲ့ category_image (Column K) အားလုံးကို ဆွဲထုတ်မည်
-            const customCategoryMap = new Map();
-            validData.forEach(item => {
-                const cName = cleanText(item.category_name);
-                const cImg = getDirectDriveLink(item.category_image || item.categoryImage);
-
-                if (cName && cName !== '') {
-                    const key = cName.toLowerCase();
-                    if (!customCategoryMap.has(key)) {
-                        customCategoryMap.set(key, {
-                            name: cName,
-                            linkName: cName,
-                            image: cImg || ''
-                        });
-                    } else if (cImg && !customCategoryMap.get(key).image) {
-                        customCategoryMap.get(key).image = cImg;
-                    }
-                }
-            });
-            categoryData = Array.from(customCategoryMap.values());
-
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
             const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
             const videoContainer = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
 
-            // --- Display Controller (စာမျက်နှာအလိုက် ပေါ်ရမည့်ဟာကို တိကျစွာ ထိန်းချုပ်ခြင်း) ---
+            // Display Controller & Render
             if (selectedModel || selectedCategory) {
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) categoryContainer.style.display = 'none';
@@ -115,14 +73,14 @@ async function loadDataFromWorker() {
                 if (categoryContainer) categoryContainer.style.display = 'none';
                 if (modelContainer) {
                     modelContainer.style.display = 'grid';
-                    renderModels();
+                    renderModelsDirect(validData); // Model များကို တိုက်ရိုက်ထုတ်ပြမည်
                 }
             } else if (window.location.pathname.includes('category.html')) {
                 if (videoContainer) videoContainer.style.display = 'none';
                 if (modelContainer) modelContainer.style.display = 'none';
                 if (categoryContainer) {
                     categoryContainer.style.display = 'grid';
-                    renderCategories();
+                    renderCategoriesDirect(validData); // Category များကို တိုက်ရိုက်ထုတ်ပြမည်
                 }
             } else {
                 if (modelContainer) modelContainer.style.display = 'none';
@@ -138,11 +96,81 @@ async function loadDataFromWorker() {
     }
 }
 
-// Side Menu Toggle
+// Model များကို Sheet ထဲက model_name အတိုင်း တိုက်ရိုက်ဆွဲထုတ်ပြရန်
+function renderModelsDirect(data) {
+    const container = document.getElementById('modelContainer') || document.getElementById('model-container');
+    if (!container) return;
+
+    container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 10px;";
+    container.innerHTML = '';
+
+    let count = 0;
+    data.forEach(item => {
+        if (item && item.model_name) {
+            let name = cleanText(item.model_name);
+            let image = getDirectDriveLink(item.model_image || item.modelImage);
+
+            if (name !== '') {
+                count++;
+                const displayImg = image !== '' ? image : 'https://via.placeholder.com/150';
+                container.innerHTML += `
+                    <a href="model.html?model=${encodeURIComponent(name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                        <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                            <img src="${displayImg}" alt="${name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                        </div>
+                        <div style="padding:6px 4px;">
+                            <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span>
+                        </div>
+                    </a>
+                `;
+            }
+        }
+    });
+
+    if (count === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model မရှိသေးပါ။</p>';
+    }
+}
+
+// Category များကို category_name အတိုင်း တိုက်ရိုက်ဆွဲထုတ်ပြရန်
+function renderCategoriesDirect(data) {
+    const container = document.getElementById('categoryContainer') || document.getElementById('category-container');
+    if (!container) return;
+
+    container.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
+    container.innerHTML = '';
+
+    let count = 0;
+    data.forEach(item => {
+        if (item && item.category_name) {
+            let name = cleanText(item.category_name);
+            let image = getDirectDriveLink(item.category_image || item.categoryImage);
+
+            if (name !== '') {
+                count++;
+                const displayImg = image !== '' ? image : 'https://via.placeholder.com/150';
+                container.innerHTML += `
+                    <a href="index.html?category=${encodeURIComponent(name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
+                        <div style="width:100%; height:135px; overflow:hidden; background:#000;">
+                            <img src="${displayImg}" alt="${name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                        </div>
+                        <div style="padding:8px 4px;">
+                            <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${name}</span>
+                        </div>
+                    </a>
+                `;
+            }
+        }
+    });
+
+    if (count === 0) {
+        container.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
+    }
+}
+
 function toggleSidebar() {
     const sidebar = document.querySelector('.sidebar') || document.getElementById('sidebar');
     const mainContent = document.getElementById('mainContent') || document.querySelector('.main-content');
-    
     if (sidebar) {
         sidebar.classList.toggle('open');
         sidebar.classList.toggle('closed');
@@ -162,7 +190,6 @@ function openPlayer(streamUrl) {
         modal.style.cssText = 'display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.9); z-index:9999; align-items:center; justify-content:center;';
         document.body.appendChild(modal);
     }
-
     modal.innerHTML = `
         <div id="modalContent" style="position:relative; width:95%; max-width:850px; background:#111; border-radius:8px; overflow:hidden;">
             <button onclick="closePlayer()" style="position:absolute; top:10px; right:15px; background:rgba(0,0,0,0.6); border:none; color:white; font-size:24px; cursor:pointer; z-index:10000; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center;"><i class="fa-solid fa-xmark"></i></button>
@@ -172,7 +199,6 @@ function openPlayer(streamUrl) {
         </div>
     `;
     modal.style.display = 'flex';
-
     if (window.videojs) {
         if (videojs.getPlayers()['my-video']) videojs.getPlayers()['my-video'].dispose();
         videojs('my-video', { autoplay: true, controls: true, responsive: true, fluid: true });
@@ -199,7 +225,6 @@ function renderContent() {
 
     let displayData = videoData.filter(v => v.file_id && v.file_id.trim() !== '' && !v.isVip);
 
-    // နှိပ်ထားသော Model ဖြင့် ဗီဒီယိုများကို စစ်ထုတ်ခြင်း (Column B ကို သုံးမည်)
     if (selectedModel) {
         displayData = displayData.filter(item => {
             if (!item.model) return false;
@@ -234,58 +259,6 @@ function renderContent() {
                     <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3;">${video.title || ''}</h3>
                 </div>
             </div>
-        `;
-    });
-}
-
-function renderModels() {
-    const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
-    if (!modelContainer) return;
-    modelContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 10px; padding: 10px;";
-    modelContainer.innerHTML = '';
-
-    if (!modelData || modelData.length === 0) {
-        modelContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Model မရှိသေးပါ။</p>';
-        return;
-    }
-
-    modelData.forEach(m => {
-        const displayImg = (m.image && m.image.trim() !== '') ? m.image : 'https://via.placeholder.com/150';
-        modelContainer.innerHTML += `
-            <a href="model.html?model=${encodeURIComponent(m.linkName)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
-                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
-                    <img src="${displayImg}" alt="${m.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
-                </div>
-                <div style="padding:6px 4px;">
-                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.name}</span>
-                </div>
-            </a>
-        `;
-    });
-}
-
-function renderCategories() {
-    const categoryContainer = document.getElementById('categoryContainer') || document.getElementById('category-container');
-    if (!categoryContainer) return;
-    categoryContainer.style.cssText = "display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 12px; padding: 15px;";
-    categoryContainer.innerHTML = '';
-
-    if (!categoryData || categoryData.length === 0) {
-        categoryContainer.innerHTML = '<p style="color:#888; text-align:center; width:100%;">Category မရှိသေးပါ။</p>';
-        return;
-    }
-
-    categoryData.forEach(cat => {
-        const displayImg = (cat.image && cat.image.trim() !== '') ? cat.image : 'https://via.placeholder.com/150';
-        categoryContainer.innerHTML += `
-            <a href="category.html?category=${encodeURIComponent(cat.linkName)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
-                <div style="width:100%; height:135px; overflow:hidden; background:#000;">
-                    <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
-                </div>
-                <div style="padding:8px 4px;">
-                    <span style="font-size:12px; font-weight:600; color:#fff; display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${cat.name}</span>
-                </div>
-            </a>
         `;
     });
 }
