@@ -314,3 +314,4 @@ function renderCategories() {
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
+        
