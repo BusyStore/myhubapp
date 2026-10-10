@@ -246,21 +246,22 @@ function renderContent() {
         return;
     }
 
-    displayData.forEach(video => {
+        displayData.forEach(video => {
         container.innerHTML += `
-            <div class="video-card" onclick="openPlayer('${video.stream_url}')" style="cursor:pointer;">
-                <div class="thumbnail-box" style="position:relative;">
-                    <video src="${video.thumbnail}" autoplay loop muted playsinline style="width:100%; height:150px; object-fit:cover; pointer-events:none;"></video>
-                    <span class="view-badge" style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:#fff; font-size:11px; padding:2px 6px; border-radius:4px;">
+            <div class="video-card" onclick="openPlayer('${video.file_id}', '${video.stream_url}')" style="cursor:pointer; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; display:flex; flex-direction:column;">
+                <div class="thumbnail-box" style="position:relative; width:100%; height:150px; background:#000; overflow:hidden;">
+                    <video src="${video.thumbnail}" autoplay loop muted playsinline style="width:100%; height:100%; object-fit:cover; pointer-events:none; display:block; position:absolute; top:0; left:0;"></video>
+                    <span class="view-badge" style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:#fff; font-size:11px; padding:2px 6px; border-radius:4px; z-index:2;">
                         <i class="fa-solid fa-eye"></i> ${video.views || 0}
                     </span>
                 </div>
                 <div class="video-info" style="padding: 8px 10px;">
-                    <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3;">${video.title || ''}</h3>
+                    <h3 style="font-size: 14px; margin: 0; color: #fff; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${video.title || ''}</h3>
                 </div>
             </div>
         `;
     });
+
 }
 
 document.addEventListener("DOMContentLoaded", loadDataFromWorker);
