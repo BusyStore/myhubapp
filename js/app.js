@@ -59,15 +59,13 @@ async function loadDataFromWorker() {
                 };
             });
 
-            // ၂။ Model ဒေတာများ သီးသန့် စုဆောင်းခြင်း (Comma ပါလျှင် ခွဲထုတ်၍ ပေါင်းရန်)
+            // ၂။ Model ဒေတာများနှင့် ပုံ/Count များကို စုဆောင်းခြင်း
             const modelMap = new Map();
             validData.forEach(item => {
-                if (item && item.model_name) {
-                    let rawModels = cleanText(item.model_name);
-                    let image = getDirectDriveLink(item.model_image);
+                if (item && (item.model_name || item.model)) {
+                    let rawModels = cleanText(item.model_name || item.model);
+                    let img = getDirectDriveLink(item.model_image || item.modelImage);
                     let hasVideo = item.file_id && cleanText(item.file_id) !== '';
-
-                    // ကော်မာ (,) ပါပါက ခွဲထုတ်မည်
                     let models = rawModels.split(',').map(m => cleanText(m)).filter(m => m !== '');
 
                     models.forEach(name => {
@@ -75,9 +73,13 @@ async function loadDataFromWorker() {
                         if (!modelMap.has(lowerName)) {
                             modelMap.set(lowerName, {
                                 name: name,
-                                image: image !== '' ? image : 'https://via.placeholder.com/150',
+                                image: img,
                                 count: 0
                             });
+                        } else {
+                            if (img && !modelMap.get(lowerName).image) {
+                                modelMap.get(lowerName).image = img;
+                            }
                         }
                         if (hasVideo) {
                             modelMap.get(lowerName).count++;
@@ -87,32 +89,44 @@ async function loadDataFromWorker() {
             });
             modelData = Array.from(modelMap.values());
 
-            // ၃။ Category ဒေတာများ သီးသန့် စုဆောင်းခြင်း (Comma ပါလျှင် ခွဲထုတ်၍ ပေါင်းရန်)
+            // ၃။ Category Master List ကို category_name မှ ဆွဲမည်၊ Count ကိုမူ item.category (ကော်မာပါသော) မှ တိကျစွာ ရေမည်
             const catMap = new Map();
+
+            // ပထမအဆင့် - category_name (သို့မဟုတ် category) မှ Master List နာမည်များနှင့် ပုံများကို အရင်စုမည်
             validData.forEach(item => {
-                if (item && item.category_name) {
-                    let rawCats = cleanText(item.category_name);
-                    let image = getDirectDriveLink(item.category_image);
-                    let hasVideo = item.file_id && cleanText(item.file_id) !== '';
-
-                    // ကော်မာ (,) ပါပါက ခွဲထုတ်မည်
-                    let cats = rawCats.split(',').map(c => cleanText(c)).filter(c => c !== '');
-
+                let catField = cleanText(item.category_name || item.category);
+                let img = getDirectDriveLink(item.category_image || item.categoryImage);
+                if (catField !== '') {
+                    let cats = catField.split(',').map(c => cleanText(c)).filter(c => c !== '');
                     cats.forEach(name => {
                         let lowerName = name.toLowerCase();
                         if (!catMap.has(lowerName)) {
                             catMap.set(lowerName, {
                                 name: name,
-                                image: image !== '' ? image : 'https://via.placeholder.com/150',
+                                image: img,
                                 count: 0
                             });
-                        }
-                        if (hasVideo) {
-                            catMap.get(lowerName).count++;
+                        } else {
+                            if (img && !catMap.get(lowerName).image) {
+                                catMap.get(lowerName).image = img;
+                            }
                         }
                     });
                 }
             });
+
+            // ဒုတိယအဆင့် - ဗီဒီယို တစ်ပုဒ်ချင်းစီ၏ item.category ထဲပါသော နာမည်များကို စစ်ပြီး Count ကို တိကျစွာ ပေါင်းထည့်မည်
+            videoData.forEach(video => {
+                if (video.category) {
+                    let videoCats = video.category.split(',').map(c => cleanText(c).toLowerCase()).filter(c => c !== '');
+                    videoCats.forEach(lowerCatName => {
+                        if (catMap.has(lowerCatName)) {
+                            catMap.get(lowerCatName).count++;
+                        }
+                    });
+                }
+            });
+
             categoryData = Array.from(catMap.values());
 
             const modelContainer = document.getElementById('modelContainer') || document.getElementById('model-container');
@@ -155,7 +169,7 @@ async function loadDataFromWorker() {
     }
 }
 
-// modelData ကို သုံး၍ Model များကို ပြသရန်
+// Model များကို ပြသရန်
 function renderModelsDirect() {
     const container = document.getElementById('modelContainer') || document.getElementById('model-container');
     if (!container) return;
@@ -169,10 +183,11 @@ function renderModelsDirect() {
     }
 
     modelData.forEach(model => {
+        const displayImg = (model.image && model.image !== '') ? model.image : 'https://via.placeholder.com/150';
         container.innerHTML += `
             <a href="model.html?model=${encodeURIComponent(model.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
                 <div style="width:100%; height:135px; overflow:hidden; background:#000; position:relative;">
-                    <img src="${model.image}" alt="${model.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                    <img src="${displayImg}" alt="${model.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
                     <span style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:#fff; font-size:10px; padding:2px 5px; border-radius:4px;">${model.count} vids</span>
                 </div>
                 <div style="padding:6px 4px;">
@@ -183,7 +198,7 @@ function renderModelsDirect() {
     });
 }
 
-// categoryData ကို သုံး၍ Category များကို ပြသရန်
+// Category များကို ပြသရန်
 function renderCategoriesDirect() {
     const container = document.getElementById('categoryContainer') || document.getElementById('category-container');
     if (!container) return;
@@ -197,10 +212,11 @@ function renderCategoriesDirect() {
     }
 
     categoryData.forEach(cat => {
+        const displayImg = (cat.image && cat.image !== '') ? cat.image : 'https://via.placeholder.com/150';
         container.innerHTML += `
             <a href="index.html?category=${encodeURIComponent(cat.name)}" style="display:block; text-decoration:none; background:#1a1a24; border-radius:10px; overflow:hidden; border:1px solid #282836; text-align:center;">
                 <div style="width:100%; height:135px; overflow:hidden; background:#000; position:relative;">
-                    <img src="${cat.image}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
+                    <img src="${displayImg}" alt="${cat.name}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.onerror=null; this.src='https://via.placeholder.com/150';">
                     <span style="position:absolute; bottom:5px; right:5px; background:rgba(0,0,0,0.7); color:#fff; font-size:10px; padding:2px 5px; border-radius:4px;">${cat.count} vids</span>
                 </div>
                 <div style="padding:8px 4px;">
@@ -267,7 +283,7 @@ function closePlayer() {
     }
 }
 
-// videoData ကို သုံး၍ ဗီဒီယိုများကို စစ်ထုတ်ပြသရန် (Comma ပါသော Category/Model များကိုပါ မှန်ကန်စွာ စစ်ထုတ်ပေးမည်)
+// ဗီဒီယိုများကို စစ်ထုတ်ပြသရန်
 function renderContent() {
     const container = document.getElementById('videoContainer') || document.getElementById('video-container') || document.querySelector('.video-grid');
     if (!container) return;
